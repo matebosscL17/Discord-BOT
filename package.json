@@ -1,0 +1,9 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "Changelog és ticket bot",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "engines": { "node": ">=20.12" },
+  "dependencies": { "discord.js": "^14.18.0" }
+}
