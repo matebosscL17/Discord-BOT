@@ -4,13 +4,9 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const settings = require('../../settings');
+const { formatChangelogLine: formatLine } = require('../utils');
 
 const typeById = (id) => settings.changelogTypes.find((type) => type.id === id) ?? settings.changelogTypes[0];
-
-function formatLine(line) {
-  const icon = settings.changelogLineIcons[line[0]];
-  return icon ? `${icon} ${line.slice(1).trim()}` : `• ${line}`;
-}
 
 async function showModal(interaction) {
   const type = interaction.options.getString('tipus') ?? settings.changelogTypes[0].id;

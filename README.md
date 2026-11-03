@@ -87,6 +87,12 @@ npm start
 
 Sikeres indításkor ez jelenik meg: `A bot elindult: ...`
 
+## Automatikus changelog
+
+Induláskor a bot megnézi a `frissitesek.js` fájlt, és a még ki nem tett verziókat beírja a Changelog csatornába. Azt, hogy mi ment már ki, a csatorna utolsó 100 üzenetéből állapítja meg, ezért újraindításkor nem ismétel.
+
+Új frissítésnél a lista **elejére** kell felvenni egy új bejegyzést, új verziószámmal. Ha a `frissitesek.js` fájlt üresre állítod, vagy törlöd a `src/modules/auto-changelog.js` fájlt, a funkció nem fut.
+
 ## Testreszabás
 
 A `settings.js` fájlban átírhatod a színeket, a szövegeket, a ticket kategóriákat és a rangok ikonjait. Utána indítsd újra a botot.

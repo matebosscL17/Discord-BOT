@@ -8,6 +8,12 @@ const errorMessage = (error) => (error?.code === 50013
   ? 'A botnak nincs ehhez joga, vagy a rangja túl alacsonyan van a rangok listájában.'
   : 'Valami hiba történt. A részletek a bot konzoljában vannak.');
 
+// A sor eleji + - ! jelek ikonra cserélése.
+function formatChangelogLine(line) {
+  const icon = settings.changelogLineIcons[line[0]];
+  return icon ? `${icon} ${line.slice(1).trim()}` : `• ${line}`;
+}
+
 // Napló küldése. Ha nincs LOG_CHANNEL_ID, vagy hibázik, a bot akkor is fut tovább.
 async function sendLog(guild, { title, description, color = settings.color, files }) {
   if (!config.logChannelId) return;
@@ -21,4 +27,4 @@ async function sendLog(guild, { title, description, color = settings.color, file
   }
 }
 
-module.exports = { ephemeral, errorMessage, sendLog };
+module.exports = { ephemeral, errorMessage, formatChangelogLine, sendLog };
