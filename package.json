@@ -1,7 +1,7 @@
 {
   "name": "discord-bot",
-  "version": "1.0.0",
-  "description": "Changelog és ticket bot",
+  "version": "2.0.0",
+  "description": "Moduláris Discord bot: ticket, changelog, játékrangok, moderáció, üdvözlés",
   "main": "index.js",
   "scripts": { "start": "node index.js" },
   "engines": { "node": ">=20.12" },

@@ -1,60 +1,109 @@
-# Discord bot: Changelog és Ticket
+# Discord bot 2.0
+
+Moduláris Discord bot. Minden funkció külön fájl a `src/modules` mappában.
 
 ## Parancsok
-- `/changelog`: űrlapot nyit, majd szép üzenetben kirakja a frissítést a Changelog csatornába.
-- `/ticket-panel`: kirak egy gombot abba a csatornába, ahol futtatod. Erre kattintva nyílik a privát ticket.
 
-Mindkettőt csak a "Szerver kezelése" joggal rendelkezők látják.
-A ticketet a nyitója, a support rang és a csatornakezelő jogúak zárhatják le. Lezáráskor a csatorna törlődik, másolat nem készül róla.
+| Parancs | Mit csinál | Ki használhatja |
+| --- | --- | --- |
+| `/changelog` | Bejelentés típussal, ikonokkal, opcionális pinggel | Szerver kezelése jog |
+| `/ticket-panel` | Ticket gombok kategóriánként | Szerver kezelése jog |
+| `/ticket hozzaad`, `/ticket eltavolit` | Tag kezelése a ticketben | Support rang |
+| `/rangpanel` | Rangválasztó gombok, legfeljebb 10 rang | Rangok kezelése jog |
+| `/kick`, `/ban`, `/unban` | Kirúgás, kitiltás, feloldás | Megfelelő jog |
+| `/nemit`, `/nemitas-fel` | Némítás és feloldása | Tagok moderálása jog |
+| `/torles` | 1-100 üzenet törlése | Üzenetek kezelése jog |
+| `/help`, `/ping`, `/szerverinfo` | Súgó és adatok | Mindenki |
 
-## 1. Bot létrehozása
+A ticketben van átvétel gomb és lezárási indok. Lezáráskor a bot naplóz, és megpróbál privát üzenetet küldeni a ticket nyitójának.
+A `/changelog` szövegében a `+` zöld, a `-` piros, a `!` sárga ikon lesz a sor elején.
+
+## Frissítés a régi verzióról
+
+1. Állítsd le a botot.
+2. Csomagold ki a zipet, és másold a fájlokat a régiek fölé: `index.js`, `package.json`, `settings.js`, `src` mappa, `README.md`, `.env.example`.
+3. A `.env` fájlodhoz ne nyúlj. Ha a hosting panelen adtad meg a beállításokat, azok is maradnak.
+4. Futtasd: `npm install`
+5. Indítsd el: `npm start`
+
+A régi ticket gombok és a nyitott ticketek tovább működnek. A `/ticket-panel` újbóli futtatásával kapod meg az új, kategóriás gombokat.
+
+### Új jogok a botnak
+
+A moderációhoz több jog kell. Nyisd meg újra a meghívó linket az `APP_ID` kicserélésével, és válaszd ugyanazt a szervert:
+
+https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1099780189206
+
+A bot rangja legyen minden olyan rang fölött, amit kioszt vagy moderál.
+
+## Első telepítés
+
+### 1. Bot létrehozása
 1. Nyisd meg: https://discord.com/developers/applications
 2. **New Application**, adj neki nevet.
 3. A **General Information** oldalon másold ki az **Application ID**-t.
 4. A **Bot** oldalon nyomd meg a **Reset Token** gombot, és másold ki a tokent.
 
-A token olyan, mint egy jelszó: aki megszerzi, átveszi a botot. Ne küldd el senkinek, és ne töltsd fel nyilvános helyre.
+A token olyan, mint egy jelszó. Ne küldd el senkinek, és ne töltsd fel nyilvános helyre.
 
-## 2. Meghívás a szerverre
-Az alábbi linkben cseréld ki az `APP_ID` részt az Application ID-ra, és nyisd meg a böngészőben:
+### 2. Meghívás
+Nyisd meg a fenti meghívó linket az `APP_ID` kicserélésével.
 
-https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=268553232
+### 3. Azonosítók kimásolása
+Kapcsold be a **Beállítások > Haladó > Fejlesztői mód** opciót, majd jobb klikk vagy hosszú nyomás a szerverre, csatornára vagy rangra, és **Azonosító másolása**.
 
-A linkben szereplő jogok: csatornák megtekintése és kezelése, rangok kezelése, üzenetküldés, linkek beágyazása, fájl csatolása, előzmények olvasása.
+### 4. Beállítások
+Másold le a `.env.example` fájlt `.env` néven, és töltsd ki, vagy add meg az értékeket a hosting paneljén.
 
-Ezután a szerver beállításaiban (**Rangok**) húzd a bot rangját a support rang fölé.
+| Név | Kötelező | Mi ez |
+| --- | --- | --- |
+| `DISCORD_TOKEN` | igen | a bot tokenje |
+| `GUILD_ID` | igen | a szerver azonosítója |
+| `CHANGELOG_CHANNEL_ID` | igen | a Changelog csatorna |
+| `SUPPORT_ROLE_ID` | igen | a ticketeket kezelő rang |
+| `TICKET_CATEGORY_ID` | nem | a ticketek kategóriája |
+| `LOG_CHANNEL_ID` | nem | a napló csatornája |
+| `CHANGELOG_PING_ROLE_ID` | nem | a `/changelog` által pingelt rang |
+| `WELCOME_CHANNEL_ID` | nem | az üdvözlő csatorna |
+| `AUTO_ROLE_ID` | nem | az új tagok alaprangja |
+| `ENABLE_TRANSCRIPT` | nem | `true`: lezáráskor szövegfájl a ticketről a naplóba |
 
-## 3. Azonosítók kimásolása
-1. Discordban: **Felhasználói beállítások > Haladó > Fejlesztői mód** bekapcsolása.
-2. Jobb klikk a szerverre, a Changelog csatornára és a support rangra, majd **Azonosító másolása**.
+A `.env` fájlt soha ne töltsd fel GitHubra.
 
-## 4. Beállítás
-Másold le a `.env.example` fájlt `.env` néven, és töltsd ki:
+### Discord intentek
+A fejlesztői oldal **Bot** fülén a **Privileged Gateway Intents** résznél kapcsold be:
+- **SERVER MEMBERS INTENT**, ha használod a `WELCOME_CHANNEL_ID` vagy `AUTO_ROLE_ID` beállítást.
+- **MESSAGE CONTENT INTENT**, ha `ENABLE_TRANSCRIPT=true`.
 
-| Név | Mi ez |
-| --- | --- |
-| `DISCORD_TOKEN` | a bot tokenje |
-| `GUILD_ID` | a szerver azonosítója |
-| `CHANGELOG_CHANNEL_ID` | a Changelog csatorna azonosítója |
-| `SUPPORT_ROLE_ID` | a ticketeket kezelő rang azonosítója |
-| `TICKET_CATEGORY_ID` | nem kötelező: a ticketek kategóriája |
+Ha ezek nélkül indítod, a bot leáll, és kiírja, mit kell bekapcsolnod.
 
-Ha a hosting panelen van "Environment variables" vagy "Startup" rész, inkább ott add meg ezeket, és ne tölts fel `.env` fájlt.
+### 5. Indítás
+A bothoz **Node.js 22** ajánlott.
 
-## 5. Feltöltés hostingra
-1. Regisztrálj egy Node.js-t támogató bot hostingra, és hozz létre egy szervert **Node.js 22** verzióval.
-2. Töltsd fel az `index.js`, `package.json` és `.env` fájlokat. A `node_modules` mappát nem kell.
-3. Ha a panel nem telepít magától, futtasd: `npm install`
-4. Indítási parancs: `npm start`
+```bash
+npm install
+npm start
+```
 
-Sikeres indításnál a konzolban ez látszik: `A bot elindult: ...`
+Sikeres indításkor ez jelenik meg: `A bot elindult: ...`
 
-## 6. Első próba
-1. Futtasd a `/changelog` parancsot, és nézd meg a Changelog csatornát.
-2. Futtasd a `/ticket-panel` parancsot, nyiss egy ticketet, majd zárd le.
+## Testreszabás
+
+A `settings.js` fájlban átírhatod a színeket, a szövegeket, a ticket kategóriákat és a rangok ikonjait. Utána indítsd újra a botot.
+
+Egy funkciót úgy kapcsolhatsz ki, hogy kitörlöd a fájlját a `src/modules` mappából. Új `.js` fájl ebben a mappában automatikusan betöltődik.
+
+## Példa rangválasztóra
+
+```text
+/rangpanel rang1:@Minecraft rang2:@CS2 rang3:@Valorant rang4:@GTA V rang5:@Roblox
+```
+
+Moderátori joggal rendelkező rangot a bot biztonsági okból nem tesz gombra.
 
 ## Ha valami nem megy
+
 - **`Hiányzó beállítás`**: üres vagy rossz nevű sor van a beállításokban.
-- **`TokenInvalid` / `An invalid token was provided`**: rossz a token, kérj újat a Reset Tokennel.
-- **`Valami hiba történt` ticket nyitásakor**: a bot nem kapott meg minden jogot, vagy a rangja a support rang alatt van.
-- **Nem jelennek meg a parancsok**: rossz a `GUILD_ID`, vagy a bot meghívásakor kimaradt az `applications.commands`. Próbáld a Discord újraindításával is.
+- **`Rossz a token`**: kérj újat a Reset Token gombbal.
+- **`A botnak nincs ehhez joga`**: nyisd meg újra a meghívó linket, és húzd feljebb a bot rangját.
+- **Nem jelennek meg a parancsok**: ellenőrizd a `GUILD_ID` értékét, és indítsd újra a Discordot.
