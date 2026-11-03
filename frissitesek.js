@@ -4,6 +4,15 @@
 // Bármelyik elhagyható. A sorok elején a + zöld, a - piros, a ! sárga ikon lesz.
 module.exports = [
   {
+    verzio: '2.4.0',
+    cim: 'Klipfal és javaslatdoboz',
+    valtozasok: [
+      '+ /klip: oszd meg a legjobb játékklipedet, a többiek 🔥 reakcióval szavazhatnak',
+      '+ Minden hétfőn este 6-kor kiderül, melyik lett a hét klipje',
+      '+ /otlet: küldd be az ötleted, a többiek szavazhatnak rá, a csapat pedig válaszol',
+    ],
+  },
+  {
     verzio: '2.3.0',
     cim: 'Csapatkereső és saját hangszobák',
     valtozasok: [

@@ -60,5 +60,18 @@ module.exports = {
     emptyTimeoutMinutes: 5,
   },
 
+  // A bot indításkor létrehozza a csatornát, ha még nincs ilyen nevű.
+  // Ha átnevezed a csatornát, itt is írd át.
+  clips: {
+    channelName: '🎬•klipek',
+    cooldownMinutes: 10,
+    // Innen fogad el linket a bot
+    allowedDomains: ['youtube.com', 'youtu.be', 'twitch.tv', 'medal.tv', 'streamable.com', 'tiktok.com'],
+  },
+  suggestions: {
+    channelName: '💡•otletek',
+    cooldownMinutes: 10,
+  },
+
   welcomeMessage: 'Üdv a szerveren, {user}! Örülünk, hogy itt vagy. 🎉',
 };
