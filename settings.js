@@ -6,6 +6,13 @@ module.exports = {
   warningColor: 0xfee75c,
   errorColor: 0xed4245,
 
+  // Ide mennek a privát frissítések és a napló. A .env-ben a LOG_CHANNEL_ID felülírja.
+  logChannelId: '1526919133227257926',
+
+  // A szerver tulajdonosán kívül ezek a rangok használhatják a tulaj parancsokat.
+  // Példa: ownerRoleIds: ['123456789012345678'],
+  ownerRoleIds: [],
+
   // A bot neve alatt megjelenő szöveg: "Nézi: ..."
   status: 'a szervert',
 

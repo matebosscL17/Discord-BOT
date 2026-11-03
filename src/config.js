@@ -1,3 +1,5 @@
+const settings = require('../settings');
+
 // A .env fájl betöltése. Ha a hosting panelen adod meg az értékeket, nem kell .env.
 try { process.loadEnvFile(); } catch {}
 
@@ -9,7 +11,7 @@ const config = {
   changelogChannelId: env('CHANGELOG_CHANNEL_ID'),
   supportRoleId: env('SUPPORT_ROLE_ID'),
   ticketCategoryId: env('TICKET_CATEGORY_ID'),
-  logChannelId: env('LOG_CHANNEL_ID'),
+  logChannelId: env('LOG_CHANNEL_ID') ?? settings.logChannelId,
   changelogPingRoleId: env('CHANGELOG_PING_ROLE_ID'),
   welcomeChannelId: env('WELCOME_CHANNEL_ID'),
   autoRoleId: env('AUTO_ROLE_ID'),

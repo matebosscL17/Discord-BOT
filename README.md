@@ -13,6 +13,7 @@ Moduláris Discord bot. Minden funkció külön fájl a `src/modules` mappában.
 | `/kick`, `/ban`, `/unban` | Kirúgás, kitiltás, feloldás | Megfelelő jog |
 | `/nemit`, `/nemitas-fel` | Némítás és feloldása | Tagok moderálása jog |
 | `/torles` | 1-100 üzenet törlése | Üzenetek kezelése jog |
+| `/createcategory`, `/createchannel` | Kategória és csatorna létrehozása | Csak tulajok |
 | `/help`, `/ping`, `/szerverinfo` | Súgó és adatok | Mindenki |
 
 A ticketben van átvétel gomb és lezárási indok. Lezáráskor a bot naplóz, és megpróbál privát üzenetet küldeni a ticket nyitójának.
@@ -89,9 +90,17 @@ Sikeres indításkor ez jelenik meg: `A bot elindult: ...`
 
 ## Automatikus changelog
 
-Induláskor a bot megnézi a `frissitesek.js` fájlt, és a még ki nem tett verziókat beírja a Changelog csatornába. Azt, hogy mi ment már ki, a csatorna utolsó 100 üzenetéből állapítja meg, ezért újraindításkor nem ismétel.
+Induláskor a bot megnézi a `frissitesek.js` fájlt, és a még ki nem tett verziókat beírja a Changelog csatornába. Azt, hogy mi ment már ki, a két csatorna utolsó 100-100 üzenetéből állapítja meg, ezért újraindításkor nem ismétel.
+
+A `valtozasok` sorai a nyilvános Changelog csatornába, a `privatValtozasok` sorai a logs csatornába kerülnek.
 
 Új frissítésnél a lista **elejére** kell felvenni egy új bejegyzést, új verziószámmal. Ha a `frissitesek.js` fájlt üresre állítod, vagy törlöd a `src/modules/auto-changelog.js` fájlt, a funkció nem fut.
+
+## Tulaj parancsok
+
+A `/createcategory` és a `/createchannel` parancsot a szerver tulajdonosa használhatja. Más rangot a `settings.js` fájl `ownerRoleIds` listájában adhatsz hozzá, de annak a rangnak Administrator jog is kell, különben a Discord nem mutatja neki a parancsot.
+
+Ha megadsz `lathato_rang` értéket, a kategóriát vagy csatornát csak az a rang látja.
 
 ## Testreszabás
 
