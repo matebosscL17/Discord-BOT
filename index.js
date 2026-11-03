@@ -65,6 +65,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await match.handler(interaction, match.args, context);
   } catch (error) {
+    // A Discord 3 másodpercet ad a válaszra. Ha lejárt, erre már válaszolni sem lehet.
+    if (error.code === 10062) {
+      console.warn(`Késett a válasz (${id}). Lassú a net, vagy a bot két helyen fut egyszerre.`);
+      return;
+    }
     console.error(`Hiba itt: ${id}`, error);
     const message = errorMessage(error);
     const send = interaction.deferred || interaction.replied
