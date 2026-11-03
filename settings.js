@@ -40,5 +40,25 @@ module.exports = {
   // Ha a rang neve tartalmazza a szót, ez az ikon kerül a gombjára
   roleEmojis: { minecraft: '⛏️', cs2: '🔫', valorant: '🎯', gta: '🚗', roblox: '🧱' },
 
+  // /lfg játékok. Legfeljebb 25 sor. A "roleName" a játékrang neve: ha van ilyen rang,
+  // csak a tagjai csatlakozhatnak. Ha nincs, bárki jöhet.
+  lfgGames: [
+    { id: 'minecraft', label: 'Minecraft', emoji: '⛏️', roleName: 'Minecraft' },
+    { id: 'cs2', label: 'CS2', emoji: '🔫', roleName: 'CS2' },
+    { id: 'valorant', label: 'Valorant', emoji: '🎯', roleName: 'Valorant' },
+    { id: 'gta', label: 'GTA V', emoji: '🚗', roleName: 'GTA V' },
+    { id: 'roblox', label: 'Roblox', emoji: '🧱', roleName: 'Roblox' },
+  ],
+  lfgExpiryHours: 3,
+
+  // A bot indításkor létrehozza ezt a kategóriát és csatornát, ha még nincs.
+  // FONTOS: ebben a kategóriában minden üres hangcsatornát töröl, kivéve a létrehozó csatornát.
+  tempVoice: {
+    categoryName: '🔊 • Ideiglenes szobák',
+    hubName: '➕ • Szoba létrehozása',
+    // Ennyi perc múlva törlődik a csapatszoba, ha senki nem lépett be
+    emptyTimeoutMinutes: 5,
+  },
+
   welcomeMessage: 'Üdv a szerveren, {user}! Örülünk, hogy itt vagy. 🎉',
 };

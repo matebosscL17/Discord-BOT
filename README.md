@@ -13,6 +13,7 @@ Moduláris Discord bot. Minden funkció külön fájl a `src/modules` mappában.
 | `/kick`, `/ban`, `/unban` | Kirúgás, kitiltás, feloldás | Megfelelő jog |
 | `/nemit`, `/nemitas-fel` | Némítás és feloldása | Tagok moderálása jog |
 | `/torles` | 1-100 üzenet törlése | Üzenetek kezelése jog |
+| `/lfg` | Csapatkereső gombokkal, megteltekor privát hangszoba | Mindenki |
 | `/createcategory`, `/createchannel` | Kategória és csatorna létrehozása | Csak tulajok |
 | `/help`, `/ping`, `/szerverinfo` | Súgó és adatok | Mindenki |
 
@@ -33,7 +34,7 @@ A régi ticket gombok és a nyitott ticketek tovább működnek. A `/ticket-pane
 
 A moderációhoz több jog kell. Nyisd meg újra a meghívó linket az `APP_ID` kicserélésével, és válaszd ugyanazt a szervert:
 
-https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1099780189206
+https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1099800112150
 
 A bot rangja legyen minden olyan rang fölött, amit kioszt vagy moderál.
 
@@ -95,6 +96,16 @@ Induláskor a bot megnézi a `frissitesek.js` fájlt, és a még ki nem tett ver
 A `valtozasok` sorai a nyilvános Changelog csatornába, a `privatValtozasok` sorai a logs csatornába kerülnek.
 
 Új frissítésnél a lista **elejére** kell felvenni egy új bejegyzést, új verziószámmal. Ha a `frissitesek.js` fájlt üresre állítod, vagy törlöd a `src/modules/auto-changelog.js` fájlt, a funkció nem fut.
+
+## Csapatkereső
+
+`/lfg jatek:CS2 letszam:5` kirak egy kártyát csatlakozás gombbal. Ha van a játékkal egyező nevű rang, csak a tagjai csatlakozhatnak. Amikor megtelik, a bot privát hangszobát nyit a csapatnak. A játékokat a `settings.js` fájl `lfgGames` listájában írhatod át. Minden kártya 3 óra után lejár.
+
+## Saját hangszobák
+
+A bot indításkor létrehoz egy **🔊 • Ideiglenes szobák** kategóriát és benne a **➕ • Szoba létrehozása** csatornát. Aki belép ide, saját szobát kap. A szoba chatjében gombokkal állítható a név, a létszám, a zárás, valamint kirúgható vagy beengedhető egy tag. Ha a szoba kiürül, törlődik.
+
+Ebbe a kategóriába ne tegyél saját hangcsatornát, mert a bot törli, ha üres. Ha átnevezed a kategóriát, a `settings.js` fájlban is írd át, különben indításkor újat hoz létre.
 
 ## Tulaj parancsok
 

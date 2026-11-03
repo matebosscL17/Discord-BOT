@@ -4,6 +4,15 @@
 // Bármelyik elhagyható. A sorok elején a + zöld, a - piros, a ! sárga ikon lesz.
 module.exports = [
   {
+    verzio: '2.3.0',
+    cim: 'Csapatkereső és saját hangszobák',
+    valtozasok: [
+      '+ /lfg: keress csapatot, és ha megtelik, a bot privát hangszobát nyit nektek',
+      '+ Saját hangszoba: lépj be a Szoba létrehozása csatornába',
+      '+ A szobádat gombokkal átnevezheted, lezárhatod, és beállíthatod a létszámát',
+    ],
+  },
+  {
     verzio: '2.2.0',
     cim: 'Tulaj parancsok',
     privatValtozasok: [
