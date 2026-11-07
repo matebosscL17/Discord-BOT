@@ -105,17 +105,17 @@ A `valtozasok` sorai a nyilvános Changelog csatornába, a `privatValtozasok` so
 
 ## Saját hangszobák
 
-A bot indításkor létrehoz egy **🔊 • Ideiglenes szobák** kategóriát és benne a **➕ • Szoba létrehozása** csatornát. Aki belép ide, saját szobát kap. A szoba chatjében gombokkal állítható a név, a létszám, a zárás, valamint kirúgható vagy beengedhető egy tag. Ha a szoba kiürül, törlődik.
+A bot első induláskor megkeresi vagy létrehozza a **🔊 • Ideiglenes szobák** kategóriát és benne a **➕ • Szoba létrehozása** csatornát, majd megjegyzi az azonosítójukat a `data/ids.json` fájlban. Ezután átnevezheted és áthelyezheted őket. Aki belép ide, saját szobát kap. A szoba chatjében gombokkal állítható a név, a létszám, a zárás, valamint kirúgható vagy beengedhető egy tag. Ha a szoba kiürül, törlődik.
 
-Ebbe a kategóriába ne tegyél saját hangcsatornát, mert a bot törli, ha üres. Ha átnevezed a kategóriát, a `settings.js` fájlban is írd át, különben indításkor újat hoz létre.
+Ebbe a kategóriába ne tegyél saját hangcsatornát, mert a bot törli, ha üres. A `data` mappát ne töröld. Ha mégis elveszne, add meg a `settings.js` fájl `tempVoice` részében a `categoryId` és `hubId` értékét.
 
 ## Klipfal
 
-`/klip link:... cim:...` kirakja a klipet a **🎬•klipek** csatornába, amit a bot hoz létre. Ide csak a bot ír, a tagok 🔥 reakcióval szavaznak. Minden hétfőn 18:00-kor a bot kihirdeti az előző hét klipjét, a saját szavazat nem számít. Az elfogadott oldalakat a `settings.js` fájl `clips` része tartalmazza. A klipet a beküldője és a csapat törölheti.
+`/klip link:... cim:...` kirakja a klipet a klipek csatornába. Ennek azonosítója a `settings.js` fájl `clips.channelId` sorában van. Ide csak a bot ír, a tagok 🔥 reakcióval szavaznak. Minden hétfőn 18:00-kor a bot kihirdeti az előző hét klipjét, a saját szavazat nem számít. Az elfogadott oldalakat a `settings.js` fájl `clips` része tartalmazza. A klipet a beküldője és a csapat törölheti.
 
 ## Javaslatdoboz
 
-`/otlet szoveg:...` kirak egy kártyát a **💡•otletek** csatornába 👍 és 👎 szavazással. A support rang és a Szerver kezelése joggal rendelkezők indokkal elfogadhatják vagy elutasíthatják. A döntésről a beküldő privát üzenetet kap, ha engedélyezte, és a döntés a naplóba is bekerül.
+`/otlet szoveg:...` kirak egy kártyát az ötletek csatornába (`settings.js`: `suggestions.channelId`) 👍 és 👎 szavazással. A support rang és a Szerver kezelése joggal rendelkezők indokkal elfogadhatják vagy elutasíthatják. A döntésről a beküldő privát üzenetet kap, ha engedélyezte, és a döntés a naplóba is bekerül.
 
 ## Tulaj parancsok
 

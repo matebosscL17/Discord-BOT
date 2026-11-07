@@ -51,24 +51,31 @@ module.exports = {
   ],
   lfgExpiryHours: 3,
 
-  // A bot indításkor létrehozza ezt a kategóriát és csatornát, ha még nincs.
+  // A bot az első induláskor megkeresi név alapján, vagy létrehozza a kategóriát és a csatornát,
+  // utána megjegyzi az azonosítójukat. Ezután átnevezheted és áthelyezheted őket.
+  // Az azonosítókat itt is megadhatod, ilyenkor a bot sosem hoz létre újat.
   // FONTOS: ebben a kategóriában minden üres hangcsatornát töröl, kivéve a létrehozó csatornát.
   tempVoice: {
+    categoryId: '',
+    hubId: '',
     categoryName: '🔊 • Ideiglenes szobák',
     hubName: '➕ • Szoba létrehozása',
     // Ennyi perc múlva törlődik a csapatszoba, ha senki nem lépett be
     emptyTimeoutMinutes: 5,
   },
 
-  // A bot indításkor létrehozza a csatornát, ha még nincs ilyen nevű.
-  // Ha átnevezed a csatornát, itt is írd át.
+  // Ha megvan a csatorna azonosítója (channelId), a bot mindig azt használja, és sosem hoz létre újat.
+  // Ha nincs megadva, név alapján keres, és az első találat után megjegyzi az azonosítót,
+  // így utána nyugodtan átnevezheted vagy áthelyezheted.
   clips: {
+    channelId: '1566601542155501608',
     channelName: '🎬•klipek',
     cooldownMinutes: 10,
     // Innen fogad el linket a bot
     allowedDomains: ['youtube.com', 'youtu.be', 'twitch.tv', 'medal.tv', 'streamable.com', 'tiktok.com'],
   },
   suggestions: {
+    channelId: '',
     channelName: '💡•otletek',
     cooldownMinutes: 10,
   },

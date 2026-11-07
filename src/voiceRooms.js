@@ -3,8 +3,11 @@ const {
   PermissionFlagsBits, UserSelectMenuBuilder,
 } = require('discord.js');
 const settings = require('../settings');
+const { resolveChannel } = require('./channels');
 
-const { categoryName, hubName, emptyTimeoutMinutes } = settings.tempVoice;
+const {
+  categoryId, hubId, categoryName, hubName, emptyTimeoutMinutes,
+} = settings.tempVoice;
 const MEMBER_ACCESS = [
   PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect,
   PermissionFlagsBits.Speak, PermissionFlagsBits.SendMessages,
@@ -17,12 +20,18 @@ const BOT_ACCESS = [
 let setupPromise = null;
 
 async function createSetup(guild) {
-  const channels = await guild.channels.fetch();
-  const category = channels.find((channel) => channel?.type === ChannelType.GuildCategory && channel.name === categoryName)
-    ?? await guild.channels.create({ name: categoryName, type: ChannelType.GuildCategory });
-  const hub = channels.find((channel) => channel?.type === ChannelType.GuildVoice
-    && channel.parentId === category.id && channel.name === hubName)
-    ?? await guild.channels.create({ name: hubName, type: ChannelType.GuildVoice, parent: category.id });
+  const category = await resolveChannel(guild, 'tempVoiceCategory', {
+    id: categoryId,
+    name: categoryName,
+    type: ChannelType.GuildCategory,
+    create: () => guild.channels.create({ name: categoryName, type: ChannelType.GuildCategory }),
+  });
+  const hub = await resolveChannel(guild, 'tempVoiceHub', {
+    id: hubId,
+    name: hubName,
+    type: ChannelType.GuildVoice,
+    create: () => guild.channels.create({ name: hubName, type: ChannelType.GuildVoice, parent: category.id }),
+  });
   return { categoryId: category.id, hubId: hub.id };
 }
 

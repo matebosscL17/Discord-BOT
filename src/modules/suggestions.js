@@ -30,7 +30,7 @@ async function submit(interaction) {
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   const { user } = interaction;
-  const channel = await ensureBotChannel(interaction.guild, settings.suggestions.channelName);
+  const channel = await ensureBotChannel(interaction.guild, 'suggestions', settings.suggestions);
   const embed = new EmbedBuilder().setColor(settings.color)
     .setAuthor({ name: `💡 Ötlet: ${user.username}` })
     .setDescription(interaction.options.getString('szoveg', true))

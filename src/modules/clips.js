@@ -46,7 +46,7 @@ async function submitClip(interaction) {
   }
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-  const channel = await ensureBotChannel(interaction.guild, settings.clips.channelName);
+  const channel = await ensureBotChannel(interaction.guild, 'clips', settings.clips);
   const game = interaction.options.getString('jatek');
   const embed = new EmbedBuilder().setColor(settings.color)
     .setAuthor({ name: CARD_LABEL })
@@ -121,7 +121,7 @@ async function announceWinner(client) {
   if (lastCheckedWeek === week) return;
 
   const guild = await client.guilds.fetch(config.guildId);
-  const channel = await ensureBotChannel(guild, settings.clips.channelName);
+  const channel = await ensureBotChannel(guild, 'clips', settings.clips);
   const messages = await recentMessages(channel, cutoff - WEEK_MS);
   const own = messages.filter((message) => message.author.id === client.user.id);
 

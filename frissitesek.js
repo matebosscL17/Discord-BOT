@@ -4,6 +4,14 @@
 // Bármelyik elhagyható. A sorok elején a + zöld, a - piros, a ! sárga ikon lesz.
 module.exports = [
   {
+    verzio: '2.4.1',
+    cim: 'Csatornák azonosító alapján',
+    privatValtozasok: [
+      '! A bot a klipek, ötletek és ideiglenes szobák csatornáit azonosító alapján ismeri fel',
+      '! Átnevezés vagy áthelyezés után sem hoz létre újat',
+    ],
+  },
+  {
     verzio: '2.4.0',
     cim: 'Klipfal és javaslatdoboz',
     valtozasok: [
