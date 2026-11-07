@@ -3,6 +3,9 @@ const { getId, saveId } = require('./store');
 
 const pending = new Map();
 
+// Szóközök, emojik és kis-nagybetű nélkül hasonlít: "I D E I G L E N E S  V C" = "ideiglenes vc".
+const normalize = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
 async function fetchChannel(guild, id) {
   if (!id) return null;
   return guild.channels.fetch(id).catch(() => null);
@@ -10,7 +13,9 @@ async function fetchChannel(guild, id) {
 
 // Csatorna keresése ebben a sorrendben: megadott azonosító, megjegyzett azonosító, név.
 // Ha egyik sincs meg, létrehozza a csatornát a megadott módon, és megjegyzi az azonosítóját.
-async function resolveChannel(guild, key, { id, name, type, create }) {
+async function resolveChannel(guild, key, {
+  id, name, oldNames = [], type, create,
+}) {
   if (id) {
     const configured = await fetchChannel(guild, id);
     if (!configured) throw new Error(`Nem találom a(z) ${id} azonosítójú csatornát (${key}). Ellenőrizd a settings.js fájlt!`);
@@ -21,7 +26,8 @@ async function resolveChannel(guild, key, { id, name, type, create }) {
   if (remembered) return remembered;
 
   const channels = await guild.channels.fetch();
-  const channel = channels.find((item) => item?.type === type && item.name === name) ?? await create();
+  const wanted = [name, ...oldNames].map(normalize);
+  const channel = channels.find((item) => item?.type === type && wanted.includes(normalize(item.name))) ?? await create();
   saveId(key, channel.id);
   return channel;
 }

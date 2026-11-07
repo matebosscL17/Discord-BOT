@@ -105,7 +105,7 @@ A `valtozasok` sorai a nyilvános Changelog csatornába, a `privatValtozasok` so
 
 ## Saját hangszobák
 
-A bot első induláskor megkeresi vagy létrehozza a **🔊 • Ideiglenes szobák** kategóriát és benne a **➕ • Szoba létrehozása** csatornát, majd megjegyzi az azonosítójukat a `data/ids.json` fájlban. Ezután átnevezheted és áthelyezheted őket. Aki belép ide, saját szobát kap. A szoba chatjében gombokkal állítható a név, a létszám, a zárás, valamint kirúgható vagy beengedhető egy tag. Ha a szoba kiürül, törlődik.
+A bot első induláskor megkeresi vagy létrehozza a **I D E I G L E N E S V C** kategóriát (a régi **🔊 • Ideiglenes szobák** nevén is megtalálja) és benne a **➕ • Szoba létrehozása** csatornát, majd megjegyzi az azonosítójukat a `data/ids.json` fájlban. Ezután átnevezheted és áthelyezheted őket. Aki belép ide, saját szobát kap. A szoba chatjében gombokkal állítható a név, a létszám, a zárás, valamint kirúgható vagy beengedhető egy tag. Ha a szoba kiürül, törlődik.
 
 Ebbe a kategóriába ne tegyél saját hangcsatornát, mert a bot törli, ha üres. A `data` mappát ne töröld. Ha mégis elveszne, add meg a `settings.js` fájl `tempVoice` részében a `categoryId` és `hubId` értékét.
 

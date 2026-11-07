@@ -58,7 +58,9 @@ module.exports = {
   tempVoice: {
     categoryId: '',
     hubId: '',
-    categoryName: '🔊 • Ideiglenes szobák',
+    categoryName: 'I D E I G L E N E S V C',
+    // A régi nevén is megtalálja, ha még nem nevezted át.
+    categoryOldNames: ['🔊 • Ideiglenes szobák'],
     hubName: '➕ • Szoba létrehozása',
     // Ennyi perc múlva törlődik a csapatszoba, ha senki nem lépett be
     emptyTimeoutMinutes: 5,

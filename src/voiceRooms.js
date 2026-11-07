@@ -6,7 +6,7 @@ const settings = require('../settings');
 const { resolveChannel } = require('./channels');
 
 const {
-  categoryId, hubId, categoryName, hubName, emptyTimeoutMinutes,
+  categoryId, hubId, categoryName, categoryOldNames, hubName, emptyTimeoutMinutes,
 } = settings.tempVoice;
 const MEMBER_ACCESS = [
   PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect,
@@ -23,6 +23,7 @@ async function createSetup(guild) {
   const category = await resolveChannel(guild, 'tempVoiceCategory', {
     id: categoryId,
     name: categoryName,
+    oldNames: categoryOldNames,
     type: ChannelType.GuildCategory,
     create: () => guild.channels.create({ name: categoryName, type: ChannelType.GuildCategory }),
   });
