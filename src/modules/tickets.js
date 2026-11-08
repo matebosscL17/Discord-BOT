@@ -9,8 +9,11 @@ const { ephemeral, sendLog } = require('../utils');
 const { buildTranscript } = require('../ticketTranscript');
 const { nextTicketNumber, record, summarize } = require('../ticketStats');
 
-// A ticket adatai a csatorna témájában vannak: ticket-owner:<tag>|n:<sorszám>|cat:<kategória>
+// A ticket adatai a csatorna leírásában vannak, olvasható formában:
+// "Ticket #0001 • Hibajelentés • Nyitotta: név (ID: 123)"
+// A régebbi verziók "ticket-owner:<tag>|n:<sorszám>|cat:<kategória>" formát használtak, az is működik.
 const TOPIC_PREFIX = 'ticket-owner:';
+const STATUS_FIELD = '📌 Állapot';
 const REMINDER_FOOTER = 'Inaktivitás figyelmeztetés';
 const CHECK_INTERVAL_MS = 30 * 60000;
 const HOUR_MS = 3600000;
@@ -23,17 +26,27 @@ const openingTickets = new Set(); // dupla kattintás ellen
 const closingChannels = new Set();
 
 function ticketInfo(channel) {
-  if (!channel?.topic?.startsWith(TOPIC_PREFIX)) return null;
-  const [owner, ...parts] = channel.topic.slice(TOPIC_PREFIX.length).split('|');
-  const meta = Object.fromEntries(parts.map((part) => part.split(':')));
-  return { ownerId: owner, number: meta.n ? Number(meta.n) : null, categoryId: meta.cat ?? null };
+  const topic = channel?.topic;
+  if (!topic) return null;
+  if (topic.startsWith(TOPIC_PREFIX)) {
+    const [owner, ...parts] = topic.slice(TOPIC_PREFIX.length).split('|');
+    const meta = Object.fromEntries(parts.map((part) => part.split(':')));
+    return { ownerId: owner, number: meta.n ? Number(meta.n) : null, categoryId: meta.cat ?? null };
+  }
+  const match = topic.match(/^Ticket #(\d+) • (.+?) • Nyitotta: .* \(ID: (\d+)\)$/);
+  if (!match) return null;
+  const category = settings.ticketCategories.find((item) => item.label === match[2]);
+  return { ownerId: match[3], number: Number(match[1]), categoryId: category?.id ?? null };
 }
+
+const topicFor = (number, category, user) => `Ticket #${pad(number)} • ${category.label} • `
+  + `Nyitotta: ${user.username} (ID: ${user.id})`;
+const pad = (number) => String(number).padStart(4, '0');
 const ownerOf = (channel) => ticketInfo(channel)?.ownerId ?? null;
 const findOpenTicket = (guild, userId) => guild.channels.cache.find((channel) => ownerOf(channel) === userId);
 const categoryById = (id) => settings.ticketCategories.find((category) => category.id === id)
   ?? { id: 'ticket', label: 'Ticket', emoji: '🎫' };
 const questionsOf = (category) => (category.questions?.length ? category.questions : DEFAULT_QUESTIONS).slice(0, 5);
-const pad = (number) => String(number).padStart(4, '0');
 const ticketLabel = (info) => (info?.number ? `#${pad(info.number)}` : 'ticket');
 
 const isSupport = (interaction) => interaction.member.roles.cache.has(config.supportRoleId)
@@ -118,7 +131,7 @@ async function createTicket(interaction, [categoryId]) {
       name: `${category.emoji}•ticket-${pad(number)}`,
       type: ChannelType.GuildText,
       parent: config.ticketCategoryId,
-      topic: `${TOPIC_PREFIX}${user.id}|n:${number}|cat:${category.id}`,
+      topic: topicFor(number, category, user),
       permissionOverwrites: [
         { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
         { id: user.id, allow: MEMBER_ACCESS },
@@ -131,15 +144,24 @@ async function createTicket(interaction, [categoryId]) {
     });
 
     const embed = new EmbedBuilder().setColor(settings.color)
-      .setTitle(`${category.emoji} ${category.label} #${pad(number)}`)
-      .setFooter({ text: user.username })
+      .setAuthor({ name: `${category.emoji} ${category.label}` })
+      .setTitle(`Ticket #${pad(number)}`)
+      .setDescription(`Szia <@${user.id}>! Köszönjük, hogy írtál, a csapat hamarosan válaszol.\n`
+        + 'Addig írd le ide a részleteket, vagy csatolj képet.')
+      .setThumbnail(user.displayAvatarURL())
+      .addFields(
+        { name: '👤 Nyitotta', value: `<@${user.id}>`, inline: true },
+        { name: '📂 Típus', value: category.label, inline: true },
+        { name: STATUS_FIELD, value: '🟢 Válaszra vár', inline: true },
+      )
+      .setFooter({ text: 'Ha megoldódott, zárd le a 🔒 gombbal' })
       .setTimestamp();
     // A régi panel gombjai még "reason" mezőt küldhetnek.
     const legacy = readAnswer(interaction, 'reason');
-    if (legacy) embed.setDescription(legacy);
+    if (legacy) embed.addFields({ name: '❔ Miben segíthetünk?', value: legacy.slice(0, 1024) });
     questionsOf(category).forEach((question, index) => {
       const answer = readAnswer(interaction, `q${index}`);
-      if (answer) embed.addFields({ name: question.label, value: answer.slice(0, 1024) });
+      if (answer) embed.addFields({ name: `❔ ${question.label}`, value: answer.slice(0, 1024) });
     });
 
     await channel.send({
@@ -166,9 +188,20 @@ async function claimTicket(interaction) {
   if (!info) return void (await interaction.reply(ephemeral('Ez nem ticket csatorna.')));
   if (!isSupport(interaction)) return void (await interaction.reply(ephemeral('Csak a support csapat veheti át.')));
 
-  const embed = EmbedBuilder.from(interaction.message.embeds[0])
-    .addFields({ name: 'Átvette', value: `<@${interaction.user.id}>` });
+  const original = interaction.message.embeds[0];
+  const status = `🟡 Folyamatban\nÁtvette: <@${interaction.user.id}>`;
+  const embed = EmbedBuilder.from(original);
+  const fields = Array.isArray(original?.fields) ? original.fields : [];
+  if (fields.some((field) => field.name === STATUS_FIELD)) {
+    embed.setFields(fields.map((field) => (field.name === STATUS_FIELD ? { ...field, value: status } : field)));
+  } else {
+    embed.addFields({ name: 'Átvette', value: `<@${interaction.user.id}>` }); // régi ticket
+  }
   await interaction.update({ embeds: [embed], components: [ticketButtons(true)] });
+  await interaction.channel.send({
+    content: `🙋 <@${info.ownerId}>, a ticketedet átvette <@${interaction.user.id}>, hamarosan válaszol.`,
+    allowedMentions: { users: [info.ownerId] },
+  });
   record({
     type: 'claim', ticket: info.number, userId: interaction.user.id,
     waitMs: Date.now() - interaction.channel.createdTimestamp,
@@ -192,7 +225,8 @@ async function showCloseModal(interaction) {
 }
 
 function claimedBy(message) {
-  return message?.embeds[0]?.fields?.find((field) => field.name === 'Átvette')?.value?.match(/\d+/)?.[0];
+  const field = message?.embeds[0]?.fields?.find((item) => item.name === 'Átvette' || item.name === STATUS_FIELD);
+  return field?.value?.match(/<@!?(\d+)>/)?.[1];
 }
 
 // Lezárás: napló, mentés, statisztika, privát üzenet, majd a csatorna törlése.

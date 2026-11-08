@@ -4,6 +4,15 @@
 // Bármelyik elhagyható. A sorok elején a + zöld, a - piros, a ! sárga ikon lesz.
 module.exports = [
   {
+    verzio: '2.5.1',
+    cim: 'Szebb ticketek',
+    valtozasok: [
+      '+ Áttekinthetőbb ticket üzenet: üdvözlés, adatok egy sorban és állapotjelzés',
+      '+ Értesítést kapsz, amikor valaki a csapatból átveszi a ticketedet',
+      '! A ticket csatorna leírása olvasható lett',
+    ],
+  },
+  {
     verzio: '2.5.0',
     cim: 'Megújult ticket rendszer',
     valtozasok: [
