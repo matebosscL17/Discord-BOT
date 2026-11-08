@@ -4,7 +4,7 @@ const settings = require('../settings');
 
 const ephemeral = (content) => ({ content, flags: MessageFlags.Ephemeral });
 
-const errorMessage = (error) => (error?.code === 50013
+const errorMessage = (error) => error?.userMessage ?? (error?.code === 50013
   ? 'A botnak nincs ehhez joga, vagy a rangja túl alacsonyan van a rangok listájában.'
   : 'Valami hiba történt. A részletek a bot konzoljában vannak.');
 

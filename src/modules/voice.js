@@ -132,8 +132,9 @@ async function createPersonalRoom(member, state) {
 
 async function onVoiceStateUpdate(oldState, newState) {
   if (newState.guild.id !== config.guildId) return;
-  const { hubId } = await ensureSetup(newState.guild);
-  if (newState.channelId === hubId && newState.member) {
+  const setup = await ensureSetup(newState.guild);
+  if (!setup) return;
+  if (newState.channelId === setup.hubId && newState.member) {
     await createPersonalRoom(newState.member, newState);
   }
   if (oldState.channelId && oldState.channelId !== newState.channelId && oldState.channel) {
@@ -145,9 +146,10 @@ async function onVoiceStateUpdate(oldState, newState) {
 async function onReady(client) {
   try {
     const guild = await client.guilds.fetch(config.guildId);
-    const { categoryId } = await ensureSetup(guild);
+    const setup = await ensureSetup(guild);
+    if (!setup) return;
     const channels = await guild.channels.fetch();
-    await Promise.all(channels.filter((channel) => channel?.parentId === categoryId).map(deleteIfEmpty));
+    await Promise.all(channels.filter((channel) => channel?.parentId === setup.categoryId).map(deleteIfEmpty));
   } catch (error) {
     console.error('Nem sikerült előkészíteni a hangszobákat:', error.message);
   }

@@ -51,9 +51,8 @@ module.exports = {
   ],
   lfgExpiryHours: 3,
 
-  // A bot az első induláskor megkeresi név alapján, vagy létrehozza a kategóriát és a csatornát,
-  // utána megjegyzi az azonosítójukat. Ezután átnevezheted és áthelyezheted őket.
-  // Az azonosítókat itt is megadhatod, ilyenkor a bot sosem hoz létre újat.
+  // A kategóriát és a létrehozó hangcsatornát TE hozod létre, a bot csak megkeresi őket
+  // (azonosító alapján, vagy ha az nincs megadva, név alapján). Csak a tagok saját szobáit hozza létre.
   // FONTOS: ebben a kategóriában minden üres hangcsatornát töröl, kivéve a létrehozó csatornát.
   tempVoice: {
     categoryId: '',
@@ -66,7 +65,7 @@ module.exports = {
     emptyTimeoutMinutes: 5,
   },
 
-  // Ha megvan a csatorna azonosítója (channelId), a bot mindig azt használja, és sosem hoz létre újat.
+  // A bot SOHA nem hoz létre csatornát. Ha megadod az azonosítót (channelId), azt használja.
   // Ha nincs megadva, név alapján keres, és az első találat után megjegyzi az azonosítót,
   // így utána nyugodtan átnevezheted vagy áthelyezheted.
   clips: {

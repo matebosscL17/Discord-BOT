@@ -4,7 +4,8 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const settings = require('../../settings');
-const { ensureBotChannel } = require('../channels');
+const { ChannelType } = require('discord.js');
+const { findChannel, userError } = require('../channels');
 const { ephemeral } = require('../utils');
 
 const VOTE_EMOJI = '🔥';
@@ -14,6 +15,14 @@ const WEEK_MS = 7 * 24 * 3600000;
 const HOUR_MS = 3600000;
 const SCAN_LIMIT = 1000;
 const cooldowns = new Map();
+
+async function clipsChannel(guild) {
+  const channel = await findChannel(guild, 'clips', {
+    id: settings.clips.channelId, name: settings.clips.channelName, type: ChannelType.GuildText,
+  });
+  if (!channel) throw userError('A(z) klipek csatorna nincs beállítva. Szólj egy adminnak!');
+  return channel;
+}
 let lastCheckedWeek = null;
 
 function parseClipUrl(text) {
@@ -46,7 +55,7 @@ async function submitClip(interaction) {
   }
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-  const channel = await ensureBotChannel(interaction.guild, 'clips', settings.clips);
+  const channel = await clipsChannel(interaction.guild);
   const game = interaction.options.getString('jatek');
   const embed = new EmbedBuilder().setColor(settings.color)
     .setAuthor({ name: CARD_LABEL })
@@ -121,7 +130,7 @@ async function announceWinner(client) {
   if (lastCheckedWeek === week) return;
 
   const guild = await client.guilds.fetch(config.guildId);
-  const channel = await ensureBotChannel(guild, 'clips', settings.clips);
+  const channel = await clipsChannel(guild);
   const messages = await recentMessages(channel, cutoff - WEEK_MS);
   const own = messages.filter((message) => message.author.id === client.user.id);
 
@@ -151,8 +160,13 @@ async function announceWinner(client) {
   });
 }
 
+let warned = false;
 function startWeeklyCheck(client) {
-  const check = () => announceWinner(client).catch((error) => console.error('Hét klipje hiba:', error.message));
+  const check = () => announceWinner(client).catch((error) => {
+    if (error.userMessage && warned) return; // a hiányzó csatornát csak egyszer írja ki
+    warned = true;
+    console.error('Hét klipje hiba:', error.message);
+  });
   check();
   setInterval(check, HOUR_MS);
 }

@@ -5,10 +5,11 @@
 module.exports = [
   {
     verzio: '2.4.1',
-    cim: 'Csatornák azonosító alapján',
+    cim: 'A bot nem hoz létre csatornákat',
     privatValtozasok: [
-      '! A bot a klipek, ötletek és ideiglenes szobák csatornáit azonosító alapján ismeri fel',
-      '! Átnevezés vagy áthelyezés után sem hoz létre újat',
+      '! A bot többé nem hoz létre csatornát vagy kategóriát, csak megkeresi a meglévőket',
+      '! A klipek, ötletek és ideiglenes szobák csatornáit azonosító alapján ismeri fel, átnevezés után is',
+      '! A hangszobák a te kategóriádban és létrehozó csatornádban működnek',
     ],
   },
   {

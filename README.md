@@ -105,9 +105,9 @@ A `valtozasok` sorai a nyilvános Changelog csatornába, a `privatValtozasok` so
 
 ## Saját hangszobák
 
-A bot első induláskor megkeresi vagy létrehozza a **I D E I G L E N E S V C** kategóriát (a régi **🔊 • Ideiglenes szobák** nevén is megtalálja) és benne a **➕ • Szoba létrehozása** csatornát, majd megjegyzi az azonosítójukat a `data/ids.json` fájlban. Ezután átnevezheted és áthelyezheted őket. Aki belép ide, saját szobát kap. A szoba chatjében gombokkal állítható a név, a létszám, a zárás, valamint kirúgható vagy beengedhető egy tag. Ha a szoba kiürül, törlődik.
+A kategóriát és a létrehozó hangcsatornát **neked kell létrehoznod**, a bot ezeket csak megkeresi. Alapból név alapján: a kategória neve **I D E I G L E N E S V C**, a hangcsatornáé **➕ • Szoba létrehozása** (a szóközök, emojik és kis-nagybetűk nem számítanak). Biztosabb, ha a `settings.js` fájl `tempVoice` részében megadod a `categoryId` és `hubId` értékét. Az első megtalálás után a bot megjegyzi az azonosítókat, így utána átnevezheted és áthelyezheted őket. Amíg nincsenek meg, a hangszobák nem működnek, és a bot ezt kiírja a konzolba. Aki belép ide, saját szobát kap. A szoba chatjében gombokkal állítható a név, a létszám, a zárás, valamint kirúgható vagy beengedhető egy tag. Ha a szoba kiürül, törlődik.
 
-Ebbe a kategóriába ne tegyél saját hangcsatornát, mert a bot törli, ha üres. A `data` mappát ne töröld. Ha mégis elveszne, add meg a `settings.js` fájl `tempVoice` részében a `categoryId` és `hubId` értékét.
+A tagok saját szobáit a bot hozza létre ebben a kategóriában. Ide ne tegyél más hangcsatornát, mert a bot törli, ha üres. A `data` mappát ne töröld. Ha mégis elveszne, add meg a `settings.js` fájl `tempVoice` részében a `categoryId` és `hubId` értékét.
 
 ## Klipfal
 
@@ -116,6 +116,8 @@ Ebbe a kategóriába ne tegyél saját hangcsatornát, mert a bot törli, ha ür
 ## Javaslatdoboz
 
 `/otlet szoveg:...` kirak egy kártyát az ötletek csatornába (`settings.js`: `suggestions.channelId`) 👍 és 👎 szavazással. A support rang és a Szerver kezelése joggal rendelkezők indokkal elfogadhatják vagy elutasíthatják. A döntésről a beküldő privát üzenetet kap, ha engedélyezte, és a döntés a naplóba is bekerül.
+
+**A bot semmilyen csatornát vagy kategóriát nem hoz létre magától**, kivéve a ticketeket és a tagok ideiglenes hangszobáit. A klipek és ötletek csatornáját a `settings.js` fájlban add meg (`channelId`).
 
 ## Tulaj parancsok
 

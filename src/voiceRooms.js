@@ -3,7 +3,7 @@ const {
   PermissionFlagsBits, UserSelectMenuBuilder,
 } = require('discord.js');
 const settings = require('../settings');
-const { resolveChannel } = require('./channels');
+const { findChannel, userError } = require('./channels');
 
 const {
   categoryId, hubId, categoryName, categoryOldNames, hubName, emptyTimeoutMinutes,
@@ -17,38 +17,52 @@ const BOT_ACCESS = [
   PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.ReadMessageHistory,
 ];
 
+const RETRY_MS = 60000;
 let setupPromise = null;
+let setupCheckedAt = 0;
+let warned = false;
 
-async function createSetup(guild) {
-  const category = await resolveChannel(guild, 'tempVoiceCategory', {
-    id: categoryId,
-    name: categoryName,
-    oldNames: categoryOldNames,
-    type: ChannelType.GuildCategory,
-    create: () => guild.channels.create({ name: categoryName, type: ChannelType.GuildCategory }),
+// A bot nem hoz létre semmit: a kategóriát és a létrehozó csatornát te készíted el.
+async function findSetup(guild) {
+  const category = await findChannel(guild, 'tempVoiceCategory', {
+    id: categoryId, name: categoryName, oldNames: categoryOldNames, type: ChannelType.GuildCategory,
   });
-  const hub = await resolveChannel(guild, 'tempVoiceHub', {
-    id: hubId,
-    name: hubName,
-    type: ChannelType.GuildVoice,
-    create: () => guild.channels.create({ name: hubName, type: ChannelType.GuildVoice, parent: category.id }),
+  const hub = await findChannel(guild, 'tempVoiceHub', {
+    id: hubId, name: hubName, type: ChannelType.GuildVoice,
   });
-  return { categoryId: category.id, hubId: hub.id };
+  if (category && hub) {
+    warned = false;
+    return { categoryId: category.id, hubId: hub.id };
+  }
+  if (!warned) {
+    warned = true;
+    console.warn(`Hangszobák kikapcsolva: nem találom ${category ? '' : `a(z) "${categoryName}" kategóriát`}`
+      + `${!category && !hub ? ' és ' : ''}${hub ? '' : `a(z) "${hubName}" hangcsatornát`}. `
+      + 'Hozd létre, vagy add meg az azonosítóját a settings.js fájlban.');
+  }
+  return null;
 }
 
-// A kategória és a létrehozó csatorna megkeresése vagy létrehozása, egyszer futásonként.
+// Ha nincs meg, percenként újra megnézi, így a létrehozás után újraindítás nélkül is működik.
 function ensureSetup(guild) {
-  setupPromise ??= createSetup(guild).catch((error) => {
-    setupPromise = null;
-    throw error;
-  });
+  if (!setupPromise || Date.now() - setupCheckedAt > RETRY_MS) {
+    setupCheckedAt = Date.now();
+    setupPromise = findSetup(guild).then((setup) => {
+      if (!setup) return null;
+      setupCheckedAt = Infinity; // ha megvan, nem kell újra keresni
+      return setup;
+    }).catch((error) => {
+      setupPromise = null;
+      throw error;
+    });
+  }
   return setupPromise;
 }
 
 async function isTempRoom(channel) {
   if (channel?.type !== ChannelType.GuildVoice) return false;
-  const { categoryId, hubId } = await ensureSetup(channel.guild);
-  return channel.parentId === categoryId && channel.id !== hubId;
+  const setup = await ensureSetup(channel.guild);
+  return Boolean(setup) && channel.parentId === setup.categoryId && channel.id !== setup.hubId;
 }
 
 async function deleteIfEmpty(channel) {
@@ -84,7 +98,8 @@ function roomPanel(ownerId, locked = false) {
 async function createRoom(guild, {
   name, ownerId, memberIds = [ownerId], isPrivate = false, userLimit = 0,
 }) {
-  const { categoryId } = await ensureSetup(guild);
+  const setup = await ensureSetup(guild);
+  if (!setup) throw userError('Az ideiglenes hangszobák nincsenek beállítva. Szólj egy adminnak!');
   const overwrites = [
     ...memberIds.map((id) => ({ id, allow: MEMBER_ACCESS })),
     { id: guild.client.user.id, allow: BOT_ACCESS },
@@ -96,7 +111,7 @@ async function createRoom(guild, {
     });
   }
   const room = await guild.channels.create({
-    name, type: ChannelType.GuildVoice, parent: categoryId, userLimit, permissionOverwrites: overwrites,
+    name, type: ChannelType.GuildVoice, parent: setup.categoryId, userLimit, permissionOverwrites: overwrites,
   });
   await room.send(roomPanel(ownerId, isPrivate)).catch((error) => console.error('Nem sikerült a szoba panelje:', error.message));
   // Ha senki nem lép be, a szoba ne maradjon ott.

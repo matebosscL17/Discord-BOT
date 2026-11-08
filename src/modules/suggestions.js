@@ -4,12 +4,21 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const settings = require('../../settings');
-const { ensureBotChannel } = require('../channels');
+const { ChannelType } = require('discord.js');
+const { findChannel, userError } = require('../channels');
 const { ephemeral, sendLog } = require('../utils');
 
 const UP = '👍';
 const DOWN = '👎';
 const cooldowns = new Map();
+
+async function suggestionsChannel(guild) {
+  const channel = await findChannel(guild, 'suggestions', {
+    id: settings.suggestions.channelId, name: settings.suggestions.channelName, type: ChannelType.GuildText,
+  });
+  if (!channel) throw userError('A(z) ötletek csatorna nincs beállítva. Szólj egy adminnak!');
+  return channel;
+}
 const DECISIONS = {
   accept: { label: 'Elfogadva', emoji: '✅', color: settings.successColor },
   reject: { label: 'Elutasítva', emoji: '❌', color: settings.errorColor },
@@ -30,7 +39,7 @@ async function submit(interaction) {
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   const { user } = interaction;
-  const channel = await ensureBotChannel(interaction.guild, 'suggestions', settings.suggestions);
+  const channel = await suggestionsChannel(interaction.guild);
   const embed = new EmbedBuilder().setColor(settings.color)
     .setAuthor({ name: `💡 Ötlet: ${user.username}` })
     .setDescription(interaction.options.getString('szoveg', true))

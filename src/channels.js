@@ -1,7 +1,4 @@
-const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { getId, saveId } = require('./store');
-
-const pending = new Map();
 
 // Szóközök, emojik és kis-nagybetű nélkül hasonlít: "I D E I G L E N E S  V C" = "ideiglenes vc".
 const normalize = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
@@ -11,62 +8,28 @@ async function fetchChannel(guild, id) {
   return guild.channels.fetch(id).catch(() => null);
 }
 
-// Csatorna keresése ebben a sorrendben: megadott azonosító, megjegyzett azonosító, név.
-// Ha egyik sincs meg, létrehozza a csatornát a megadott módon, és megjegyzi az azonosítóját.
-async function resolveChannel(guild, key, {
-  id, name, oldNames = [], type, create,
+// A bot SOSEM hoz létre csatornát. Keresési sorrend: megadott azonosító, megjegyzett azonosító, név.
+// Ha nincs meg, null az eredmény.
+async function findChannel(guild, key, {
+  id, name, oldNames = [], type,
 }) {
-  if (id) {
-    const configured = await fetchChannel(guild, id);
-    if (!configured) throw new Error(`Nem találom a(z) ${id} azonosítójú csatornát (${key}). Ellenőrizd a settings.js fájlt!`);
-    return configured;
-  }
+  if (id) return fetchChannel(guild, id);
 
   const remembered = await fetchChannel(guild, getId(key));
   if (remembered) return remembered;
 
+  const wanted = [name, ...oldNames].filter(Boolean).map(normalize);
   const channels = await guild.channels.fetch();
-  const wanted = [name, ...oldNames].map(normalize);
-  const channel = channels.find((item) => item?.type === type && wanted.includes(normalize(item.name))) ?? await create();
-  saveId(key, channel.id);
-  return channel;
+  const channel = channels.find((item) => item?.type === type && wanted.includes(normalize(item.name)));
+  if (channel) saveId(key, channel.id);
+  return channel ?? null;
 }
 
-async function createBotChannel(guild, key, { channelId, channelName }) {
-  return resolveChannel(guild, key, {
-    id: channelId,
-    name: channelName,
-    type: ChannelType.GuildText,
-    create: () => guild.channels.create({
-      name: channelName,
-      type: ChannelType.GuildText,
-      permissionOverwrites: [
-        {
-          id: guild.roles.everyone.id,
-          allow: [PermissionFlagsBits.AddReactions],
-          deny: [PermissionFlagsBits.SendMessages],
-        },
-        {
-          id: guild.client.user.id,
-          allow: [
-            PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks,
-            PermissionFlagsBits.AddReactions, PermissionFlagsBits.ReadMessageHistory,
-          ],
-        },
-      ],
-    }),
-  });
+// Hiba, amit a tag is láthat: a bot ezt írja ki neki a "Valami hiba történt" helyett.
+function userError(message) {
+  const error = new Error(message);
+  error.userMessage = message;
+  return error;
 }
 
-// Olyan csatorna, ahova csak a bot ír, a tagok reakciókkal szavaznak.
-function ensureBotChannel(guild, key, options) {
-  if (!pending.has(key)) {
-    pending.set(key, createBotChannel(guild, key, options).catch((error) => {
-      pending.delete(key);
-      throw error;
-    }));
-  }
-  return pending.get(key);
-}
-
-module.exports = { ensureBotChannel, resolveChannel };
+module.exports = { findChannel, userError };
