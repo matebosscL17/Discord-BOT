@@ -5,6 +5,31 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.11.0',
+    cim: 'Meghívás-követő és partnerrendszer',
+    valtozasok: [
+      '+ Meghívás-követő: a bot látja, ki kit hívott meg, /invites és /invitetop ranglista',
+      '+ Partnerség: a partner panelen más szerverek kérhetnek partnerséget, /partners lista',
+    ],
+    privatValtozasok: [
+      '+ Jutalomrangok adott számú meghívás után (settings.js: invites.rewards)',
+      '+ Partnerkérelmek elbírálása gombokkal, a meghívót a bot ellenőrzi',
+      '! A meghívók olvasásához a botnak "Szerver kezelése" jog kell: nyisd meg újra a meghívó linket',
+    ],
+    en: {
+      cim: 'Invite tracker and partner system',
+      valtozasok: [
+        '+ Invite tracker: the bot sees who invited whom, /invites and /invitetop leaderboard',
+        '+ Partnerships: other servers can request a partnership on the partner panel, /partners list',
+      ],
+      privatValtozasok: [
+        '+ Reward roles after a number of invites (settings.js: invites.rewards)',
+        '+ Partner requests reviewed with buttons, the bot checks the invite',
+        '! Reading invites needs the "Manage Server" permission: open the invite link again',
+      ],
+    },
+  },
+  {
     verzio: '2.10.0',
     cim: 'Bump-emlékeztető',
     valtozasok: [

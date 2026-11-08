@@ -13,6 +13,30 @@ module.exports = {
   // Példa: ownerRoleIds: ['123456789012345678'],
   ownerRoleIds: [],
 
+  // ===== Meghívás-követő =====
+  invites: {
+    enabled: true,
+    // Ide írja ki, ki kit hívott meg. Ha üres, csak a naplóba kerül.
+    channelId: '',
+    // Ennél fiatalabb fiókkal belépők "gyanúsnak" számítanak, és nem számítanak bele a meghívásokba
+    fakeAccountDays: 7,
+    // Jutalomrangok: ennyi (érvényes) meghívás után jár a rang. Pl. { count: 5, roleId: '123...' }
+    rewards: [],
+  },
+
+  // ===== Partnerrendszer =====
+  partners: {
+    enabled: true,
+    // Ide kerülnek ki az elfogadott partnerek
+    channelId: '',
+    // Ide jönnek az elbírálandó kérelmek. Ha üres, a napló csatornába.
+    reviewChannelId: '',
+    // Ezt a rangot kapja az elfogadott partner képviselője (nem kötelező)
+    roleId: '',
+    // Legalább ennyi tagja legyen a partnerszervernek (0 = nincs korlát)
+    minMembers: 0,
+  },
+
   // ===== Bump-emlékeztető (DISBOARD) =====
   bump: {
     enabled: true,

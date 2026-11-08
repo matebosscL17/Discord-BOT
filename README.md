@@ -30,6 +30,9 @@ Ha `'en'`-re váltasz, a `settings.js` szövegeinek (kategóriák, kérdések, p
 | `/clip` (`/klip`) | Klip beküldése a klipfalra, kommentszállal | Mindenki |
 | `/cliptop` (`/kliptop`) | Az elmúlt 7 vagy 30 nap legjobb klipjei | Mindenki |
 | `/suggest` (`/otlet`) | Ötlet beküldése sorszámmal és beszélgetőszállal | Mindenki |
+| `/invites` (`/meghivasok`), `/invitetop` (`/meghivo-toplista`) | Meghívási statisztika és ranglista | Mindenki |
+| `/partner-panel`, `/partner-remove` (`/partner-torles`) | Partnerkérelem panel és partner törlése | Szerver kezelése jog |
+| `/partners` (`/partnerek`) | Partnerszerverek listája | Mindenki |
 | `/bumps` (`/bumpok`) | Bump ranglista és a következő bump ideje | Mindenki |
 | `/security` (`/vedelem`) | Védelem állapota, megbízható lista, raid mód, zárolás | Tulajok és megbízhatók |
 | `/createcategory`, `/createchannel` | Kategória csatornákkal, csatorna leírással és lassított móddal | Csak tulajok |
@@ -58,7 +61,7 @@ A régi ticket gombok és a nyitott ticketek tovább működnek. A `/ticket-pane
 
 A moderációhoz több jog kell. Nyisd meg újra a meghívó linket az `APP_ID` kicserélésével, és válaszd ugyanazt a szervert:
 
-https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1409574628566
+https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1409574628598
 
 A bot rangja legyen minden olyan rang fölött, amit kioszt vagy moderál.
 
@@ -146,6 +149,24 @@ A tagok saját szobáit a bot hozza létre ebben a kategóriában. Ide ne tegyé
 `/otlet szoveg:...` kirak egy kártyát az ötletek csatornába (`settings.js`: `suggestions.channelId`) 👍 és 👎 szavazással. A support rang és a Szerver kezelése joggal rendelkezők indokkal elfogadhatják vagy elutasíthatják. A döntésről a beküldő privát üzenetet kap, ha engedélyezte, és a döntés a naplóba is bekerül.
 
 **A bot semmilyen csatornát vagy kategóriát nem hoz létre magától**, kivéve a ticketeket és a tagok ideiglenes hangszobáit. A klipek és ötletek csatornáját a `settings.js` fájlban add meg (`channelId`).
+
+## Meghívás-követő
+
+Amikor valaki belép, a bot a meghívók használatából kiderít, ki hívta meg, és kiírja a naplóba, illetve ha a `settings.js` fájlban megadod az `invites.channelId` értékét, oda is.
+
+- **Érvényes meghívás** = belépett – kilépett – friss fiók. A friss fiók 7 napnál fiatalabb, és nem számít bele, hogy ne lehessen csalni vele.
+- Ha valaki kilép, majd visszajön ugyanattól, nem számít újra.
+- **Jutalomrangok:** a `settings.js` fájlban add meg őket, például `rewards: [{ count: 5, roleId: '123...' }]`. A bot magától kiosztja, ha valaki eléri a számot.
+- A botnak **Szerver kezelése** jog kell a meghívók olvasásához.
+
+## Partnerrendszer
+
+A `/partner-panel` paranccsal kirakhatsz egy gombot, amivel más szerverek képviselői partnerséget kérhetnek. Az űrlapon megadják a meghívó linket, a bemutatkozást és az indoklást. A bot ellenőrzi, hogy a meghívó él-e, és hány tagja van a szervernek.
+
+- A kérelem a `partners.reviewChannelId` csatornába kerül, ennek hiányában a naplóba, **Elfogadás** és **Elutasítás** gombbal.
+- Elfogadáskor a bot szép kártyát rak ki a `partners.channelId` csatornába **Csatlakozás** gombbal, és ha megadod a `partners.roleId` értékét, partnerrangot ad a kérelmezőnek.
+- A kérelmező mindkét esetben privát üzenetet kap, elutasításnál az indokkal együtt.
+- A `partners.minMembers` értékével megadhatod, legalább hány tagja legyen a partnerszervernek.
 
 ## Bump-emlékeztető (DISBOARD)
 
