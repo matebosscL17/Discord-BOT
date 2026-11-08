@@ -6,7 +6,7 @@ const config = require('../config');
 const settings = require('../../settings');
 const { formatChangelogLine: formatLine } = require('../utils');
 const {
-  choice, named, pick, serverLang, translator,
+  choice, langOf, named, pick, translator,
 } = require('../i18n');
 
 const tr = translator({
@@ -66,10 +66,10 @@ async function post(interaction, [typeId, ping]) {
 
   const embed = new EmbedBuilder()
     .setColor(type.color)
-    .setAuthor({ name: `${type.emoji} ${pick(type, 'label', serverLang())}` })
+    .setAuthor({ name: `${type.emoji} ${pick(type, 'label', langOf(interaction.locale))}` })
     .setTitle(interaction.fields.getTextInputValue('title'))
     .setDescription(description)
-    .setFooter({ text: tr.server('postedBy', { name: interaction.user.username }) })
+    .setFooter({ text: t('postedBy', { name: interaction.user.username }) })
     .setTimestamp();
 
   const pingRole = ping === '1' ? config.changelogPingRoleId : undefined;

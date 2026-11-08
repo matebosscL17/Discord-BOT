@@ -81,8 +81,8 @@ async function postPanel(interaction) {
   }
 
   const embed = new EmbedBuilder().setColor(settings.color)
-    .setTitle(interaction.options.getString('title') ?? tr.server('defaultTitle'))
-    .setDescription(interaction.options.getString('description') ?? tr.server('defaultDescription'));
+    .setTitle(interaction.options.getString('title') ?? t('defaultTitle'))
+    .setDescription(interaction.options.getString('description') ?? t('defaultDescription'));
   await interaction.channel.send({ embeds: [embed], components: rows });
   await interaction.editReply(t('posted'));
 }

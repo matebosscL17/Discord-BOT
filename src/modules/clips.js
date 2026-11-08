@@ -7,7 +7,7 @@ const settings = require('../../settings');
 const { findChannel, userError } = require('../channels');
 const { ephemeral } = require('../utils');
 const {
-  choice, named, translator,
+  choice, langOf, named, translator,
 } = require('../i18n');
 
 const tr = translator({
@@ -95,14 +95,16 @@ async function submitClip(interaction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   const channel = await clipsChannel(interaction.guild);
   const game = interaction.options.getString('game');
-  const sentBy = tr.server('sentBy', { user: interaction.user.id });
+  // A kártya a beküldő nyelvén jelenik meg.
+  const T = tr.as(langOf(interaction.locale));
+  const sentBy = T('sentBy', { user: interaction.user.id });
   const embed = new EmbedBuilder().setColor(settings.color)
-    .setAuthor({ name: tr.server('card') })
+    .setAuthor({ name: T('card') })
     .setTitle(interaction.options.getString('title', true))
-    .setDescription(game ? `${sentBy}\n${tr.server('game', { game })}` : sentBy)
-    .setFooter({ text: tr.server('vote', { emoji: VOTE_EMOJI }) });
+    .setDescription(game ? `${sentBy}\n${T('game', { game })}` : sentBy)
+    .setFooter({ text: T('vote', { emoji: VOTE_EMOJI }) });
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`clip:delete:${interaction.user.id}`).setLabel(tr.server('delete'))
+    new ButtonBuilder().setCustomId(`clip:delete:${interaction.user.id}`).setLabel(T('delete'))
       .setEmoji({ name: '🗑️' }).setStyle(ButtonStyle.Secondary),
   );
 
@@ -189,12 +191,14 @@ async function announceWinner(client) {
   if (!winner || winner.score < 1) return;
 
   const authorId = clipAuthorId(winner.message);
+  // A kihirdetés a győztes klip kártyájának nyelvén jelenik meg.
+  const T = tr.as(winner.message.embeds[0]?.author?.name === tr.lang('en', 'card') ? 'en' : 'hu');
   const embed = new EmbedBuilder().setColor(settings.warningColor)
-    .setTitle(tr.server('winnerTitle', { title: winner.message.embeds[0].title }).slice(0, 256))
-    .setDescription(tr.server('winnerBody', {
+    .setTitle(T('winnerTitle', { title: winner.message.embeds[0].title }).slice(0, 256))
+    .setDescription(T('winnerBody', {
       user: authorId, emoji: VOTE_EMOJI, score: winner.score, url: winner.message.url,
     }))
-    .setFooter({ text: `${tr.server('winnerPrefix')}${week}` });
+    .setFooter({ text: `${T('winnerPrefix')}${week}` });
   await channel.send({
     content: winner.message.content, embeds: [embed], allowedMentions: { users: authorId ? [authorId] : [] },
   });

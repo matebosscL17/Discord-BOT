@@ -6,7 +6,7 @@ const config = require('../config');
 const settings = require('../../settings');
 const { findChannel, userError } = require('../channels');
 const { ephemeral, sendLog } = require('../utils');
-const { named, translator } = require('../i18n');
+const { langOf, named, translator } = require('../i18n');
 
 const tr = translator({
   hu: {
@@ -84,15 +84,17 @@ async function submit(interaction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   const { user } = interaction;
   const channel = await suggestionsChannel(interaction.guild);
+  // A kártya a beküldő nyelvén jelenik meg, a döntés is ezen a nyelven kerül rá.
+  const T = tr.as(langOf(interaction.locale));
   const embed = new EmbedBuilder().setColor(settings.color)
-    .setAuthor({ name: tr.server('author', { name: user.username }) })
+    .setAuthor({ name: T('author', { name: user.username }) })
     .setDescription(interaction.options.getString('text', true))
-    .setFooter({ text: tr.server('vote', { up: UP, down: DOWN }) })
+    .setFooter({ text: T('vote', { up: UP, down: DOWN }) })
     .setTimestamp();
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`sug:decide:accept:${user.id}`).setLabel(tr.server('accept'))
+    new ButtonBuilder().setCustomId(`sug:decide:accept:${user.id}`).setLabel(T('accept'))
       .setEmoji({ name: '✅' }).setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId(`sug:decide:reject:${user.id}`).setLabel(tr.server('reject'))
+    new ButtonBuilder().setCustomId(`sug:decide:reject:${user.id}`).setLabel(T('reject'))
       .setEmoji({ name: '❌' }).setStyle(ButtonStyle.Danger),
   );
 
@@ -121,25 +123,27 @@ async function decide(interaction, [decision, authorId]) {
 
   const message = await interaction.channel.messages.fetch({ message: interaction.message.id, force: true });
   const { key, emoji, color } = DECISIONS[decision];
-  const label = tr.server(key);
+  const cardLang = message.embeds[0]?.author?.name?.startsWith(tr.lang('en', 'author', { name: '' })) ? 'en' : 'hu';
+  const T = tr.as(cardLang);
+  const label = T(key);
   const reason = interaction.fields.getTextInputValue('reason').trim();
   const score = `${UP} ${votesOf(message, UP)}   ${DOWN} ${votesOf(message, DOWN)}`;
   const embed = EmbedBuilder.from(message.embeds[0]).setColor(color)
     .setFooter({ text: `${label}: ${interaction.user.username}` })
     .addFields(
-      { name: tr.server('votes'), value: score, inline: true },
-      { name: tr.server('decision'), value: `${emoji} ${label}`, inline: true },
+      { name: T('votes'), value: score, inline: true },
+      { name: T('decision'), value: `${emoji} ${label}`, inline: true },
     );
-  if (reason) embed.addFields({ name: tr.server('reason'), value: reason });
+  if (reason) embed.addFields({ name: T('reason'), value: reason });
   await message.edit({ embeds: [embed], components: [] });
 
-  const dmLines = [tr.server('dm', { emoji, label })];
-  if (reason) dmLines.push(tr.server('dmReason', { reason }));
+  const dmLines = [T('dm', { emoji, label })];
+  if (reason) dmLines.push(T('dmReason', { reason }));
   dmLines.push(message.url);
   await interaction.client.users.send(authorId, { content: dmLines.join('\n'), allowedMentions: { parse: [] } })
     .catch(() => {}); // Sokaknál tiltva van a privát üzenet, ez nem hiba.
   await sendLog(interaction.guild, {
-    title: tr.server('logTitle', { label }),
+    title: tr.server('logTitle', { label: tr.server(key) }),
     description: tr.server('logBody', {
       author: authorId, staff: interaction.user.id, score, url: message.url,
     }),

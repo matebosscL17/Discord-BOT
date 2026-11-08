@@ -7,7 +7,9 @@ Moduláris Discord bot. Minden funkció külön fájl a `src/modules` mappában.
 A bot magyarul és angolul is működik:
 - **A tagoknak szóló válaszok** a tag saját Discord-nyelvét követik: magyar Discordon magyarul, minden más nyelvnél angolul.
 - **A parancsok neve és leírása** is így jelenik meg. Magyar Discordon például `/nemit`, angolon `/mute`. A zárójelben a magyar név szerepel.
-- **A közös üzenetek** (ticket panel, ticketek, kártyák, napló, bejelentések) a `settings.js` fájl `language` beállítását követik: `'hu'` vagy `'en'`.
+- **A közös üzenetek** annak a nyelvén jelennek meg, aki létrehozza őket: a ticket a nyitója nyelvén, a csapatkereső-kártya a szervezőén, a klip- és ötletkártya a beküldőén, a panelek és a `/changelog` bejelentés az őket kirakó adminén. A későbbi frissítések (átvétel, tartalék, döntés, emlékeztető) is ezen a nyelven kerülnek rájuk.
+- Egy üzenetet a Discord mindenkinek ugyanúgy mutat, ezért egy közös üzenet nem lehet nézőnként más nyelvű.
+- **Ahol nincs kezdeményező** (üdvözlés, napló, automatikus bejelentések, saját hangszobák), ott a `settings.js` fájl `language` beállítása él: `'hu'` vagy `'en'`.
 
 Ha `'en'`-re váltasz, a `settings.js` szövegeinek (kategóriák, kérdések, panel, üdvözlés) az angol változata (`...En` mezők) jelenik meg. A `frissitesek.js` bejegyzéseihez is írhatsz `en` részt.
 

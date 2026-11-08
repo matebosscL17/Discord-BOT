@@ -194,8 +194,15 @@ function ticketInfo(channel) {
   return { ownerId: match[3], number: Number(match[1]), categoryId: category?.id ?? null };
 }
 
-const topicFor = (number, category, user) => `Ticket #${pad(number)} • ${pick(category, 'label', serverLang())} • `
-  + `${tr.server('openedBy')}: ${user.username} (ID: ${user.id})`;
+const topicFor = (number, category, user, lang) => `Ticket #${pad(number)} • ${pick(category, 'label', lang)} • `
+  + `${tr.lang(lang, 'openedBy')}: ${user.username} (ID: ${user.id})`;
+// A ticket nyelve: az, amelyiken a nyitója a Discordot használja. A csatorna leírásából derül ki.
+const ticketLang = (channel) => {
+  const topic = channel?.topic ?? '';
+  if (topic.includes('• Opened by: ')) return 'en';
+  if (topic.includes('• Nyitotta: ')) return 'hu';
+  return serverLang();
+};
 const ownerOf = (channel) => ticketInfo(channel)?.ownerId ?? null;
 const findOpenTicket = (guild, userId) => guild.channels.cache.find((channel) => ownerOf(channel) === userId);
 const categoryById = (id) => settings.ticketCategories.find((category) => category.id === id)
@@ -216,17 +223,18 @@ function formatDuration(ms, lang = serverLang()) {
   return tr.lang(lang, 'days', { n: Math.round(hours / 24) });
 }
 
-function ticketButtons(claimed = false) {
+function ticketButtons(lang, claimed = false) {
+  const T = tr.as(lang);
   return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('ticket:claim').setLabel(tr.server(claimed ? 'claimed' : 'claim'))
+    new ButtonBuilder().setCustomId('ticket:claim').setLabel(T(claimed ? 'claimed' : 'claim'))
       .setEmoji({ name: '🙋' }).setStyle(ButtonStyle.Success).setDisabled(claimed),
-    new ButtonBuilder().setCustomId('ticket:close').setLabel(tr.server('close'))
+    new ButtonBuilder().setCustomId('ticket:close').setLabel(T('close'))
       .setEmoji({ name: '🔒' }).setStyle(ButtonStyle.Danger),
   );
 }
 
 async function postPanel(interaction) {
-  const lang = serverLang();
+  const lang = langOf(interaction.locale); // a panelt kirakó admin nyelvén
   const embed = new EmbedBuilder().setColor(settings.color)
     .setTitle(pick(settings.ticketPanel, 'title', lang))
     .setDescription(pick(settings.ticketPanel, 'description', lang));
@@ -293,7 +301,7 @@ async function createTicket(interaction, [categoryId]) {
       name: `${category.emoji}•ticket-${pad(number)}`,
       type: ChannelType.GuildText,
       parent: config.ticketCategoryId,
-      topic: topicFor(number, category, user),
+      topic: topicFor(number, category, user, langOf(interaction.locale)),
       permissionOverwrites: [
         { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
         { id: user.id, allow: MEMBER_ACCESS },
@@ -305,23 +313,24 @@ async function createTicket(interaction, [categoryId]) {
       ],
     });
 
-    // A ticket közös üzenet, ezért a szerver nyelvén jelenik meg.
-    const lang = serverLang();
+    // A ticket a nyitója nyelvén jelenik meg, a napló a szerver nyelvén.
+    const lang = langOf(interaction.locale);
+    const T = tr.as(lang);
     const embed = new EmbedBuilder().setColor(settings.color)
       .setAuthor({ name: `${category.emoji} ${categoryLabel(category, lang)}` })
       .setTitle(`Ticket #${pad(number)}`)
-      .setDescription(tr.server('welcome', { user: user.id }))
+      .setDescription(T('welcome', { user: user.id }))
       .setThumbnail(user.displayAvatarURL())
       .addFields(
-        { name: tr.server('fieldOpener'), value: `<@${user.id}>`, inline: true },
-        { name: tr.server('fieldType'), value: categoryLabel(category, lang), inline: true },
-        { name: tr.server('status'), value: tr.server('waiting'), inline: true },
+        { name: T('fieldOpener'), value: `<@${user.id}>`, inline: true },
+        { name: T('fieldType'), value: categoryLabel(category, lang), inline: true },
+        { name: T('status'), value: T('waiting'), inline: true },
       )
-      .setFooter({ text: tr.server('footer') })
+      .setFooter({ text: T('footer') })
       .setTimestamp();
     // A régi panel gombjai még "reason" mezőt küldhetnek.
     const legacy = readAnswer(interaction, 'reason');
-    if (legacy) embed.addFields({ name: `❔ ${tr.server('defaultQuestion')}`, value: legacy.slice(0, 1024) });
+    if (legacy) embed.addFields({ name: `❔ ${T('defaultQuestion')}`, value: legacy.slice(0, 1024) });
     questionsOf(category).forEach((question, index) => {
       const answer = readAnswer(interaction, `q${index}`);
       if (answer) embed.addFields({ name: `❔ ${pick(question, 'label', lang)}`, value: answer.slice(0, 1024) });
@@ -330,7 +339,7 @@ async function createTicket(interaction, [categoryId]) {
     await channel.send({
       content: `<@${user.id}> <@&${config.supportRoleId}>`,
       embeds: [embed],
-      components: [ticketButtons()],
+      components: [ticketButtons(lang)],
       allowedMentions: { users: [user.id], roles: [config.supportRoleId] },
     });
     await interaction.editReply(t('created', { channel: channel.id }));
@@ -339,7 +348,7 @@ async function createTicket(interaction, [categoryId]) {
     });
     await sendLog(guild, {
       title: tr.server('logNew', { ticket: `#${pad(number)}` }),
-      description: tr.server('logNewBody', { user: user.id, type: categoryLabel(category, lang), channel: channel.id }),
+      description: tr.server('logNewBody', { user: user.id, type: categoryLabel(category), channel: channel.id }),
     });
   } finally {
     openingTickets.delete(user.id);
@@ -352,18 +361,19 @@ async function claimTicket(interaction) {
   if (!info) return void (await interaction.reply(ephemeral(t('notTicket'))));
   if (!isSupport(interaction)) return void (await interaction.reply(ephemeral(t('supportOnlyClaim'))));
 
+  const T = tr.as(ticketLang(interaction.channel));
   const original = interaction.message.embeds[0];
-  const status = tr.server('inWork', { user: interaction.user.id });
+  const status = T('inWork', { user: interaction.user.id });
   const embed = EmbedBuilder.from(original);
   const fields = Array.isArray(original?.fields) ? original.fields : [];
   if (fields.some((field) => STATUS_FIELDS.includes(field.name))) {
     embed.setFields(fields.map((field) => (STATUS_FIELDS.includes(field.name) ? { ...field, value: status } : field)));
   } else {
-    embed.addFields({ name: tr.server('claimedBy'), value: `<@${interaction.user.id}>` }); // régi ticket
+    embed.addFields({ name: T('claimedBy'), value: `<@${interaction.user.id}>` }); // régi ticket
   }
-  await interaction.update({ embeds: [embed], components: [ticketButtons(true)] });
+  await interaction.update({ embeds: [embed], components: [ticketButtons(ticketLang(interaction.channel), true)] });
   await interaction.channel.send({
-    content: tr.server('claimNotice', { owner: info.ownerId, staff: interaction.user.id }),
+    content: T('claimNotice', { owner: info.ownerId, staff: interaction.user.id }),
     allowedMentions: { users: [info.ownerId] },
   });
   record({
@@ -439,8 +449,10 @@ async function finishClose(channel, { closedById, reason, auto = false }) {
     files,
   });
 
-  const dm = [tr.server('dmClosed', { ticket: ticketLabel(info), guild: guild.name })];
-  if (reason) dm.push(tr.server('dmReason', { reason }));
+  // A nyitó a saját nyelvén kapja az értesítést, a napló a szerver nyelvén készül.
+  const T = tr.as(ticketLang(channel));
+  const dm = [T('dmClosed', { ticket: ticketLabel(info), guild: guild.name })];
+  if (reason) dm.push(T('dmReason', { reason }));
   await client.users.send(info.ownerId, { content: dm.join('\n'), allowedMentions: { parse: [] } })
     .catch(() => {}); // Sokaknál tiltva van a privát üzenet, ez nem hiba.
 
@@ -460,7 +472,7 @@ async function closeTicket(interaction) {
   closingChannels.add(channel.id);
   try {
     const reason = interaction.isModalSubmit?.() ? readAnswer(interaction, 'reason') : '';
-    await interaction.reply(tr.server('closedBy', { name: user.username }));
+    await interaction.reply(tr.as(ticketLang(channel))('closedBy', { name: user.username }));
     await finishClose(channel, { closedById: user.id, reason });
   } catch (error) {
     closingChannels.delete(channel.id);
@@ -475,7 +487,7 @@ async function keepOpen(interaction) {
   if (!canClose(interaction, ownerId)) return void (await interaction.reply(ephemeral(t('keepOpenDenied'))));
   await interaction.update({ components: [] });
   await interaction.channel.send({
-    content: tr.server('keptOpen', { name: interaction.user.username }), allowedMentions: { parse: [] },
+    content: tr.as(ticketLang(interaction.channel))('keptOpen', { name: interaction.user.username }), allowedMentions: { parse: [] },
   });
 }
 
@@ -485,26 +497,27 @@ async function checkInactive(channel) {
   const last = (await channel.messages.fetch({ limit: 1 })).first();
   const silentMs = Date.now() - (last?.createdTimestamp ?? channel.createdTimestamp);
   const { remindHours, closeHours } = settings.ticketInactivity;
+  const T = tr.as(ticketLang(channel));
   const isReminder = last?.author.id === channel.client.user.id
     && REMINDER_FOOTERS.includes(last.embeds[0]?.footer?.text);
 
   if (isReminder && silentMs >= closeHours * HOUR_MS) {
     closingChannels.add(channel.id);
-    await channel.send(tr.server('autoClosed'));
-    await finishClose(channel, { reason: tr.server('inactivityReason', { hours: remindHours + closeHours }), auto: true })
+    await channel.send(T('autoClosed'));
+    await finishClose(channel, { reason: T('inactivityReason', { hours: remindHours + closeHours }), auto: true })
       .catch((error) => { closingChannels.delete(channel.id); throw error; });
     return;
   }
   if (!isReminder && silentMs >= remindHours * HOUR_MS) {
     const embed = new EmbedBuilder().setColor(settings.warningColor)
-      .setTitle(tr.server('reminderTitle'))
-      .setDescription(tr.server('reminderBody', { remind: remindHours, close: closeHours }))
-      .setFooter({ text: tr.server('reminderFooter') });
+      .setTitle(T('reminderTitle'))
+      .setDescription(T('reminderBody', { remind: remindHours, close: closeHours }))
+      .setFooter({ text: T('reminderFooter') });
     await channel.send({
       content: `<@${info.ownerId}>`,
       embeds: [embed],
       components: [new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket:active').setLabel(tr.server('stillNeeded'))
+        new ButtonBuilder().setCustomId('ticket:active').setLabel(T('stillNeeded'))
           .setEmoji({ name: '✅' }).setStyle(ButtonStyle.Success),
       )],
       allowedMentions: { users: [info.ownerId] },
@@ -542,12 +555,12 @@ async function manageTicketMember(interaction) {
     await channel.permissionOverwrites.edit(user, {
       ViewChannel: true, SendMessages: true, ReadMessageHistory: true, AttachFiles: true,
     });
-    await interaction.reply({ content: tr.server('memberAdded', { user: user.id }), allowedMentions: { users: [user.id] } });
+    await interaction.reply({ content: tr.as(ticketLang(channel))('memberAdded', { user: user.id }), allowedMentions: { users: [user.id] } });
     return;
   }
   if (user.id === ownerId) return void (await interaction.reply(ephemeral(t('cannotRemoveOwner'))));
   await channel.permissionOverwrites.delete(user.id);
-  await interaction.reply({ content: tr.server('memberRemoved', { user: user.id }), allowedMentions: { parse: [] } });
+  await interaction.reply({ content: tr.as(ticketLang(channel))('memberRemoved', { user: user.id }), allowedMentions: { parse: [] } });
 }
 
 const PERIODS = ['7', '30', '0'];

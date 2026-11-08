@@ -6,7 +6,7 @@ const settings = require('../../settings');
 const { createRoom } = require('../voiceRooms');
 const { ephemeral, errorMessage } = require('../utils');
 const {
-  choice, named, pick, serverLang, translator,
+  choice, langOf, named, pick, serverLang, translator,
 } = require('../i18n');
 
 const tr = translator({
@@ -120,7 +120,7 @@ const activeHosts = new Map(); // játékos -> a kártyája létrehozásának id
 const locks = new Map();
 
 const gameById = (id) => settings.lfgGames.find((game) => game.id === id);
-const gameName = (game) => pick(game, 'label', serverLang());
+const gameName = (game, lang) => pick(game, 'label', lang);
 const findRole = (guild, game) => guild.roles.cache
   .find((role) => role.name.toLowerCase().includes(game.roleName.toLowerCase()));
 const hasGameRole = (member, role) => !role || member.roles.cache.has(role.id);
@@ -144,6 +144,8 @@ function readCard(embed, fallbackSize) {
   const team = field('👥');
   if (team) {
     return {
+      // A kártya nyelve a mezőnevekből derül ki: "👥 Team" angol, "👥 Csapat" magyar.
+      lang: team.name.startsWith(tr.lang('en', 'team').split(' (')[0]) ? 'en' : 'hu',
       members: mentions(team.value),
       size: Number(team.name.match(/\((\d+)\/(\d+)\)/)?.[2] ?? fallbackSize),
       reserves: mentions(field('⏳')?.value),
@@ -154,6 +156,7 @@ function readCard(embed, fallbackSize) {
   // A 2.6.0 előtti kártyák: a tagok a leírásban, a megjegyzés külön mezőben.
   const legacyNote = fields.find((item) => ['Megjegyzés', 'Note'].includes(item.name))?.value;
   return {
+    lang: serverLang(),
     members: mentions(embed?.description),
     size: Number(embed?.description?.match(/\((\d+)\/(\d+)\)/)?.[2] ?? fallbackSize),
     reserves: [],
@@ -164,35 +167,37 @@ function readCard(embed, fallbackSize) {
 
 const progressBar = (count, size) => '🟩'.repeat(count) + '⬛'.repeat(Math.max(size - count, 0));
 
+// A kártya a szervező nyelvén jelenik meg, és később is ezen a nyelven frissül.
 function card(game, hostId, {
-  members, reserves = [], size, note, roomId = null, status, done = false,
+  lang, members, reserves = [], size, note, roomId = null, status, done = false,
 }) {
+  const T = tr.as(lang);
   const full = members.length >= size;
   const teamLines = members.map((id) => (id === hostId ? `👑 <@${id}>` : `• <@${id}>`));
-  for (let slot = members.length; slot < size; slot += 1) teamLines.push(tr.server('freeSlot'));
+  for (let slot = members.length; slot < size; slot += 1) teamLines.push(T('freeSlot'));
   const reserveLines = reserves.map((id, index) => `${index + 1}. <@${id}>`);
 
   const embed = new EmbedBuilder()
     .setColor(done ? 0x4e5058 : (game.color ?? settings.color))
-    .setAuthor({ name: tr.server('author', { emoji: game.emoji, game: gameName(game) }) })
+    .setAuthor({ name: T('author', { emoji: game.emoji, game: gameName(game, lang) }) })
     .setDescription(`${progressBar(members.length, size)}  **${members.length}/${size}**`)
     .addFields(
-      { name: tr.server('team', { count: members.length, size }), value: teamLines.join('\n'), inline: true },
+      { name: T('team', { count: members.length, size }), value: teamLines.join('\n'), inline: true },
       {
-        name: tr.server('reserves', { count: reserves.length, max: MAX_RESERVES }),
-        value: reserveLines.join('\n') || tr.server('noReserves'),
+        name: T('reserves', { count: reserves.length, max: MAX_RESERVES }),
+        value: reserveLines.join('\n') || T('noReserves'),
         inline: true,
       },
     )
-    .setFooter({ text: tr.server('footer', { hours: settings.lfgExpiryHours }) })
+    .setFooter({ text: T('footer', { hours: settings.lfgExpiryHours }) })
     .setTimestamp();
-  if (note) embed.addFields({ name: tr.server('note'), value: note });
-  const currentStatus = roomId ? tr.server('started', { room: roomId }) : tr.server(full ? 'recruitingFull' : 'recruiting');
-  embed.addFields({ name: tr.server('status'), value: status ?? currentStatus });
+  if (note) embed.addFields({ name: T('note'), value: note });
+  const currentStatus = roomId ? T('started', { room: roomId }) : T(full ? 'recruitingFull' : 'recruiting');
+  embed.addFields({ name: T('status'), value: status ?? currentStatus });
 
   const args = `${game.id}:${hostId}`;
   const button = (id, key, emoji, style, disabled = false) => new ButtonBuilder().setCustomId(`lfg:${id}:${args}`)
-    .setLabel(tr.server(key)).setEmoji({ name: emoji }).setStyle(style).setDisabled(done || disabled);
+    .setLabel(T(key)).setEmoji({ name: emoji }).setStyle(style).setDisabled(done || disabled);
   return {
     embeds: [embed],
     components: [
@@ -235,7 +240,9 @@ async function start(interaction) {
   const ping = interaction.options.getBoolean('ping') && role;
   try {
     await interaction.reply({
-      ...card(game, user.id, { members: [user.id], size, note }),
+      ...card(game, user.id, {
+        lang: langOf(interaction.locale), members: [user.id], size, note,
+      }),
       content: ping ? `<@&${role.id}>` : undefined,
       allowedMentions: { roles: ping ? [role.id] : [] },
     });
@@ -258,7 +265,7 @@ function promoteReserves(state) {
 
 async function startRoom(message, game, hostId, state) {
   const room = await createRoom(message.guild, {
-    name: tr.server('roomName', { emoji: game.emoji, game: gameName(game) }),
+    name: tr.as(state.lang)('roomName', { emoji: game.emoji, game: gameName(game, state.lang) }),
     ownerId: hostId,
     memberIds: state.members,
     isPrivate: true,
@@ -269,7 +276,7 @@ async function startRoom(message, game, hostId, state) {
   // A kártya aktív marad: a tartalékok kilépéskor bekerülhetnek.
   await message.edit(card(game, hostId, state));
   await message.channel.send({
-    content: tr.server('ready', { members: state.members.map((id) => `<@${id}>`).join(' '), room: room.id }),
+    content: tr.as(state.lang)('ready', { members: state.members.map((id) => `<@${id}>`).join(' '), room: room.id }),
     allowedMentions: { users: state.members },
   });
 }
@@ -292,7 +299,7 @@ async function save(message, game, hostId, state, { added = [], removed = [], si
     }
     await message.edit(card(game, hostId, state));
     for (const id of added) {
-      await message.channel.send({ content: tr.server('promoted', { user: id }), allowedMentions: { users: [id] } });
+      await message.channel.send({ content: tr.as(state.lang)('promoted', { user: id }), allowedMentions: { users: [id] } });
     }
     return;
   }
@@ -304,7 +311,7 @@ async function save(message, game, hostId, state, { added = [], removed = [], si
   for (const id of added) {
     await room.permissionOverwrites.edit(id, ROOM_ACCESS);
     await message.channel.send({
-      content: tr.server('promotedRoom', { user: id, room: room.id }), allowedMentions: { users: [id] },
+      content: tr.as(state.lang)('promotedRoom', { user: id, room: room.id }), allowedMentions: { users: [id] },
     });
   }
   if (sizeChanged) await room.setUserLimit(state.size).catch(() => {});
@@ -406,7 +413,7 @@ const close = hostAction(async (interaction, args) => {
     message, game, hostId, state,
   }) => {
     activeHosts.delete(hostId);
-    await message.edit(card(game, hostId, { ...state, status: tr.server('closed'), done: true }));
+    await message.edit(card(game, hostId, { ...state, status: tr.as(state.lang)('closed'), done: true }));
   });
 });
 

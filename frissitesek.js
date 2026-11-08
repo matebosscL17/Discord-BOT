@@ -12,6 +12,7 @@ module.exports = [
       '+ A szervező elindíthatja a csapatot kevesebb emberrel, kivehet tagot és módosíthatja a létszámot',
       '+ Szebb kártya: játékonkénti szín, foglaltságjelző sáv és állapot',
       '! Indítás után a kártya aktív marad, az új tagok belépési jogot kapnak a hangszobához',
+      '+ A ticketek, kártyák és panelek annak a nyelvén jelennek meg, aki létrehozta őket (magyar vagy angol)',
     ],
     en: {
       cim: 'Improved group finder',
@@ -20,6 +21,7 @@ module.exports = [
         '+ The host can start with fewer people, remove members and change the group size',
         '+ Nicer card: colour per game, progress bar and status',
         '! After starting, the card stays active and new members get access to the voice room',
+        '+ Tickets, cards and panels appear in the language of whoever created them (Hungarian or English)',
       ],
     },
   },

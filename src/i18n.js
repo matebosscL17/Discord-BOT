@@ -22,6 +22,8 @@ function translator(dictionary) {
     user: (interaction) => (key, vars) => translate(langOf(interaction?.locale), key, vars),
     // A szerver nyelvén (settings.js)
     server: (key, vars) => translate(serverLang(), key, vars),
+    // Megadott nyelven, pl. egy közös üzenet saját nyelvén: tr.as('en')('kulcs')
+    as: (lang) => (key, vars) => translate(lang, key, vars),
     lang: translate,
   };
 }
