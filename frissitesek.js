@@ -5,6 +5,21 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.10.0',
+    cim: 'Bump-emlékeztető',
+    valtozasok: [
+      '+ A bot megköszöni a DISBOARD bumpot, és 2 óra múlva szól, hogy újra lehet bumpolni',
+      '+ /bumps: ranglista arról, ki bumpolt a legtöbbet, és mikor jön a következő bump',
+    ],
+    en: {
+      cim: 'Bump reminder',
+      valtozasok: [
+        '+ The bot thanks you for the DISBOARD bump and reminds everyone 2 hours later that it is time to bump again',
+        '+ /bumps: leaderboard of who bumped the most, and when the next bump is',
+      ],
+    },
+  },
+  {
     verzio: '2.9.1',
     cim: 'Sapphire bot engedélyezve',
     privatValtozasok: [

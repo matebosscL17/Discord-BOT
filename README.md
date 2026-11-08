@@ -30,6 +30,7 @@ Ha `'en'`-re váltasz, a `settings.js` szövegeinek (kategóriák, kérdések, p
 | `/clip` (`/klip`) | Klip beküldése a klipfalra, kommentszállal | Mindenki |
 | `/cliptop` (`/kliptop`) | Az elmúlt 7 vagy 30 nap legjobb klipjei | Mindenki |
 | `/suggest` (`/otlet`) | Ötlet beküldése sorszámmal és beszélgetőszállal | Mindenki |
+| `/bumps` (`/bumpok`) | Bump ranglista és a következő bump ideje | Mindenki |
 | `/security` (`/vedelem`) | Védelem állapota, megbízható lista, raid mód, zárolás | Tulajok és megbízhatók |
 | `/createcategory`, `/createchannel` | Kategória csatornákkal, csatorna leírással és lassított móddal | Csak tulajok |
 | `/help`, `/ping`, `/serverinfo` (`/szerverinfo`), `/userinfo` (`/taginfo`) | Kategorizált súgó és adatok | Mindenki |
@@ -145,6 +146,16 @@ A tagok saját szobáit a bot hozza létre ebben a kategóriában. Ide ne tegyé
 `/otlet szoveg:...` kirak egy kártyát az ötletek csatornába (`settings.js`: `suggestions.channelId`) 👍 és 👎 szavazással. A support rang és a Szerver kezelése joggal rendelkezők indokkal elfogadhatják vagy elutasíthatják. A döntésről a beküldő privát üzenetet kap, ha engedélyezte, és a döntés a naplóba is bekerül.
 
 **A bot semmilyen csatornát vagy kategóriát nem hoz létre magától**, kivéve a ticketeket és a tagok ideiglenes hangszobáit. A klipek és ötletek csatornáját a `settings.js` fájlban add meg (`channelId`).
+
+## Bump-emlékeztető (DISBOARD)
+
+Amikor valaki sikeresen beírja a `/bump` parancsot, a bot megköszöni, és pontosan 2 óra múlva emlékeztet, hogy újra lehet bumpolni. A bot **nem bumpol helyetted**, mert ezt a DISBOARD tiltja, és kitilthatja érte a szervert.
+
+A `settings.js` fájl `bump` részében:
+- `channelId`: ide megy az emlékeztető. Ha üres, oda, ahol utoljára bumpoltak.
+- `pingRoleId`: ezt a rangot pingeli az emlékeztető, például egy „Bumpoló” rangot.
+
+A számlálás a `data/bump.json` fájlban van, így újraindítás után is tudja, mikor jön a következő bump.
 
 ## Biztonság (raidvédelem, anti-nuke)
 

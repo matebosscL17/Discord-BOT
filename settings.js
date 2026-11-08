@@ -13,6 +13,19 @@ module.exports = {
   // Példa: ownerRoleIds: ['123456789012345678'],
   ownerRoleIds: [],
 
+  // ===== Bump-emlékeztető (DISBOARD) =====
+  bump: {
+    enabled: true,
+    // Ide megy az emlékeztető. Ha üres, oda, ahol utoljára bumpoltak.
+    channelId: '',
+    // Ezt a rangot pingeli az emlékeztető. Ha üres, nem pingel senkit.
+    pingRoleId: '',
+    // A DISBOARD 2 óránként enged bumpolni
+    intervalMinutes: 120,
+    // A DISBOARD bot azonosítója. Ha nem egyezik, a bot a "DISBOARD" nevű botot is felismeri.
+    disboardId: '302050872383242240',
+  },
+
   // ===== Biztonság: raidvédelem, spamvédelem, anti-nuke =====
   // A bot rangja legyen a LEGFELSŐ a rangok listájában, különben a fölötte lévőket nem tudja megállítani.
   security: {
