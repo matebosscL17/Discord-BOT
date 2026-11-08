@@ -18,6 +18,19 @@ const tr = translator({
     claim: 'Átvétel',
     kick: '🚫 Tag kirúgása a szobából',
     allow: '✅ Tag beengedése a szobába',
+    transfer: '👑 Tulajdonjog átadása',
+    hide: 'Elrejtés',
+    show: 'Megjelenítés',
+    owner: '👑 Tulajdonos',
+    access: '🔒 Belépés',
+    visibility: '👁️ Láthatóság',
+    size: '👥 Létszám',
+    open: 'Bárki beléphet',
+    closed: 'Zárva',
+    visible: 'Látható',
+    hidden: 'Rejtett',
+    noLimit: 'Nincs korlát',
+    people: '{n} fő',
   },
   en: {
     notSet: 'Temporary voice rooms are not set up. Ask an admin!',
@@ -30,6 +43,19 @@ const tr = translator({
     claim: 'Claim',
     kick: '🚫 Kick a member from the room',
     allow: '✅ Let a member into the room',
+    transfer: '👑 Transfer ownership',
+    hide: 'Hide',
+    show: 'Show',
+    owner: '👑 Owner',
+    access: '🔒 Access',
+    visibility: '👁️ Visibility',
+    size: '👥 Limit',
+    open: 'Anyone can join',
+    closed: 'Locked',
+    visible: 'Visible',
+    hidden: 'Hidden',
+    noLimit: 'No limit',
+    people: '{n} people',
   },
 });
 
@@ -101,28 +127,50 @@ async function deleteIfEmpty(channel) {
   });
 }
 
-function roomPanel(ownerId, locked = false) {
-  const embed = new EmbedBuilder().setColor(settings.color).setTitle(tr.server('panelTitle'))
-    .setDescription(tr.server('panelBody', { owner: ownerId }));
+// A szoba mostani állapota a jogosultságokból olvasható ki.
+function roomState(channel) {
+  const everyone = channel.guild.roles.everyone;
+  const perms = channel.permissionsFor(everyone);
+  return {
+    locked: !perms.has(PermissionFlagsBits.Connect),
+    hidden: !perms.has(PermissionFlagsBits.ViewChannel),
+    limit: channel.userLimit ?? 0,
+  };
+}
+
+function roomPanel(ownerId, { locked = false, hidden = false, limit = 0 } = {}) {
+  const T = tr.server;
+  const embed = new EmbedBuilder().setColor(locked ? settings.warningColor : settings.color).setTitle(T('panelTitle'))
+    .setDescription(T('panelBody', { owner: ownerId }))
+    .addFields(
+      { name: T('owner'), value: `<@${ownerId}>`, inline: true },
+      { name: T('access'), value: T(locked ? 'closed' : 'open'), inline: true },
+      { name: T('visibility'), value: T(hidden ? 'hidden' : 'visible'), inline: true },
+      { name: T('size'), value: limit ? T('people', { n: limit }) : T('noLimit'), inline: true },
+    );
   const button = (id, label, emoji, style = ButtonStyle.Secondary) => new ButtonBuilder()
     .setCustomId(`vc:${id}:${ownerId}`).setLabel(label).setEmoji({ name: emoji }).setStyle(style);
+  const select = (id) => new ActionRowBuilder().addComponents(new UserSelectMenuBuilder()
+    .setCustomId(`vc:${id}:${ownerId}`).setPlaceholder(T(id)));
   return {
     embeds: [embed],
     components: [
       new ActionRowBuilder().addComponents(
-        button('rename', tr.server('rename'), '✏️'),
-        button('limit', tr.server('limit'), '👥'),
-        button('lock', tr.server(locked ? 'unlock' : 'lock'), locked ? '🔓' : '🔒'),
-        button('claim', tr.server('claim'), '👑', ButtonStyle.Success),
+        button('rename', T('rename'), '✏️'),
+        button('limit', T('limit'), '👥'),
+        button('lock', T(locked ? 'unlock' : 'lock'), locked ? '🔓' : '🔒'),
+        button('hide', T(hidden ? 'show' : 'hide'), hidden ? '👁️' : '🙈'),
+        button('claim', T('claim'), '👑', ButtonStyle.Success),
       ),
-      new ActionRowBuilder().addComponents(new UserSelectMenuBuilder()
-        .setCustomId(`vc:kick:${ownerId}`).setPlaceholder(tr.server('kick'))),
-      new ActionRowBuilder().addComponents(new UserSelectMenuBuilder()
-        .setCustomId(`vc:allow:${ownerId}`).setPlaceholder(tr.server('allow'))),
+      select('kick'),
+      select('allow'),
+      select('transfer'),
     ],
     allowedMentions: { parse: [] },
   };
 }
+
+const panelFor = (channel, ownerId) => roomPanel(ownerId, roomState(channel));
 
 async function createRoom(guild, {
   name, ownerId, memberIds = [ownerId], isPrivate = false, userLimit = 0,
@@ -142,12 +190,12 @@ async function createRoom(guild, {
   const room = await guild.channels.create({
     name, type: ChannelType.GuildVoice, parent: setup.categoryId, userLimit, permissionOverwrites: overwrites,
   });
-  await room.send(roomPanel(ownerId, isPrivate)).catch((error) => console.error('Nem sikerült a szoba panelje:', error.message));
+  await room.send(roomPanel(ownerId, { locked: isPrivate, hidden: isPrivate, limit: userLimit })).catch((error) => console.error('Nem sikerült a szoba panelje:', error.message));
   // Ha senki nem lép be, a szoba ne maradjon ott.
   setTimeout(() => deleteIfEmpty(room).catch(console.error), emptyTimeoutMinutes * 60000);
   return room;
 }
 
 module.exports = {
-  createRoom, deleteIfEmpty, ensureSetup, isTempRoom, roomPanel,
+  createRoom, deleteIfEmpty, ensureSetup, isTempRoom, panelFor, roomPanel, roomState,
 };

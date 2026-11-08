@@ -15,6 +15,8 @@ const tr = translator({
     channel: 'Csatorna',
     logBody: '**Név:** {name}\n**Létrehozta:** <@{user}>\n**Látja:** {visible}',
     defaultVisibility: 'alapértelmezett',
+    withChannels: '\nBenne: {list}',
+    tooMany: 'Egyszerre legfeljebb {max} csatornát hozhatsz létre.',
   },
   en: {
     ownersOnly: 'Only the owners can use this.',
@@ -25,8 +27,12 @@ const tr = translator({
     channel: 'Channel',
     logBody: '**Name:** {name}\n**Created by:** <@{user}>\n**Visible to:** {visible}',
     defaultVisibility: 'default',
+    withChannels: '\nInside: {list}',
+    tooMany: 'You can create at most {max} channels at once.',
   },
 });
+
+const MAX_CHANNELS = 10;
 
 const isOwner = (interaction) => interaction.guild.ownerId === interaction.user.id
   || settings.ownerRoleIds.some((id) => interaction.member.roles.cache.has(id));
@@ -63,12 +69,32 @@ async function createCategory(interaction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const { role, overwrites } = visibility(interaction);
+  const split = (name) => (interaction.options.getString(name) ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+  const textNames = split('text_channels');
+  const voiceNames = split('voice_channels');
+  if (textNames.length + voiceNames.length > MAX_CHANNELS) {
+    return void (await interaction.editReply(t('tooMany', { max: MAX_CHANNELS })));
+  }
+
   const category = await interaction.guild.channels.create({
     name: interaction.options.getString('name', true),
     type: ChannelType.GuildCategory,
     permissionOverwrites: overwrites,
   });
-  await interaction.editReply(t('categoryCreated', { name: category.name }));
+  // A csatornák a kategória jogait öröklik.
+  const created = [];
+  for (const name of textNames) {
+    created.push(await interaction.guild.channels.create({
+      name: name.replace(/\s*•\s*/g, '•').slice(0, 100), type: ChannelType.GuildText, parent: category.id, permissionOverwrites: overwrites,
+    }));
+  }
+  for (const name of voiceNames) {
+    created.push(await interaction.guild.channels.create({
+      name: name.slice(0, 100), type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: overwrites,
+    }));
+  }
+  const list = created.map((channel) => `<#${channel.id}>`).join(' ');
+  await interaction.editReply(t('categoryCreated', { name: category.name }) + (list ? t('withChannels', { list }) : ''));
   await logCreated(interaction, 'category', category, role);
 }
 
@@ -80,12 +106,17 @@ async function createChannel(interaction) {
   const isVoice = interaction.options.getString('type') === 'voice';
   const name = interaction.options.getString('name', true).trim();
   const { role, overwrites } = visibility(interaction);
+  const topic = interaction.options.getString('topic');
+  const slowmode = interaction.options.getInteger('slowmode');
   const channel = await interaction.guild.channels.create({
     // A szöveges csatorna nevében nem lehet szóköz, így a "•" köré sem kerül.
     name: isVoice ? name : name.replace(/\s*•\s*/g, '•'),
     type: isVoice ? ChannelType.GuildVoice : ChannelType.GuildText,
     parent: interaction.options.getChannel('category')?.id,
     permissionOverwrites: overwrites,
+    topic: isVoice ? undefined : topic ?? undefined,
+    rateLimitPerUser: isVoice ? undefined : slowmode ?? undefined,
+    userLimit: isVoice ? interaction.options.getInteger('user_limit') ?? undefined : undefined,
   });
   await interaction.editReply(t('channelCreated', { channel: channel.id }));
   await logCreated(interaction, 'channel', channel, role);
@@ -101,7 +132,11 @@ module.exports = {
       .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
       .addStringOption((option) => named(option, ['name', 'Name of the category'], ['nev', 'A kategória neve'])
         .setRequired(true).setMaxLength(100))
-      .addRoleOption(addRole),
+      .addRoleOption(addRole)
+      .addStringOption((option) => named(option, ['text_channels', 'Text channels inside, separated by commas'],
+        ['szoveges_csatornak', 'Szöveges csatornák benne, vesszővel elválasztva']).setMaxLength(1000))
+      .addStringOption((option) => named(option, ['voice_channels', 'Voice channels inside, separated by commas'],
+        ['hangcsatornak', 'Hangcsatornák benne, vesszővel elválasztva']).setMaxLength(1000)),
     named(new SlashCommandBuilder(), ['createchannel', 'Create a new channel (owners only)'],
       ['createchannel', 'Új csatorna létrehozása (csak tulajoknak)'])
       .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -112,7 +147,13 @@ module.exports = {
       .addChannelOption((option) => named(option, ['category', 'Which category should it go in?'],
         ['kategoria', 'Melyik kategóriába kerüljön?'])
         .addChannelTypes(ChannelType.GuildCategory))
-      .addRoleOption(addRole),
+      .addRoleOption(addRole)
+      .addStringOption((option) => named(option, ['topic', 'Channel description (text channels)'],
+        ['leiras', 'A csatorna leírása (szöveges csatornánál)']).setMaxLength(1024))
+      .addIntegerOption((option) => named(option, ['slowmode', 'Slowmode in seconds (0-21600)'],
+        ['lassitas', 'Lassított mód másodpercben (0-21600)']).setMinValue(0).setMaxValue(21600))
+      .addIntegerOption((option) => named(option, ['user_limit', 'User limit (voice channels, 0-99)'],
+        ['letszam', 'Létszámkorlát (hangcsatornánál, 0-99)']).setMinValue(0).setMaxValue(99)),
   ],
   handlers: { createcategory: createCategory, createchannel: createChannel },
 };

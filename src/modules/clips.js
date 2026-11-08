@@ -26,6 +26,12 @@ const tr = translator({
     winnerPrefix: 'A hét klipje • ',
     winnerTitle: '🏆 A hét klipje: {title}',
     winnerBody: 'Gratulálunk, <@{user}>! {emoji} {score} szavazat\n[Ugrás a kliphez]({url})',
+    thread: '💬 {title}',
+    topTitle: '🏆 Legjobb klipek: {period}',
+    topEmpty: 'Ebben az időszakban még nem volt klip.',
+    topLine: '**{place}.** [{title}]({url}) • <@{user}> • {emoji} {score}',
+    period7: 'utolsó 7 nap',
+    period30: 'utolsó 30 nap',
   },
   en: {
     notSet: 'The clips channel is not set up. Ask an admin!',
@@ -42,6 +48,12 @@ const tr = translator({
     winnerPrefix: 'Clip of the week • ',
     winnerTitle: '🏆 Clip of the week: {title}',
     winnerBody: 'Congratulations, <@{user}>! {emoji} {score} votes\n[Go to the clip]({url})',
+    thread: '💬 {title}',
+    topTitle: '🏆 Top clips: {period}',
+    topEmpty: 'There were no clips in this period yet.',
+    topLine: '**{place}.** [{title}]({url}) • <@{user}> • {emoji} {score}',
+    period7: 'last 7 days',
+    period30: 'last 30 days',
   },
 });
 
@@ -112,6 +124,9 @@ async function submitClip(interaction) {
     content: url, embeds: [embed], components: [row], allowedMentions: { parse: [] },
   });
   await message.react(VOTE_EMOJI);
+  // Kommentszál a kliphez. Ha a botnak nincs joga szálat nyitni, egyszerűen kimarad.
+  await message.startThread?.({ name: T('thread', { title: interaction.options.getString('title', true) }).slice(0, 100), autoArchiveDuration: 4320 })
+    .catch(() => {});
   cooldowns.set(interaction.user.id, Date.now());
   await interaction.editReply(t('posted', { url: message.url }));
 }
@@ -215,6 +230,37 @@ function startWeeklyCheck(client) {
   setInterval(check, HOUR_MS);
 }
 
+const MEDALS = ['🥇', '🥈', '🥉'];
+
+// Toplista: az elmúlt 7 vagy 30 nap klipjei 🔥 szerint. A beküldő saját szavazata itt nem számít bele.
+async function topClips(interaction) {
+  const t = tr.user(interaction);
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  const days = Number(interaction.options.getString('period') ?? '7');
+  const since = Date.now() - days * 24 * HOUR_MS;
+  const channel = await clipsChannel(interaction.guild);
+  const messages = await recentMessages(channel, since);
+  const clips = messages.filter((message) => message.author.id === interaction.client.user.id
+    && CARD_LABELS.includes(message.embeds[0]?.author?.name) && message.createdTimestamp >= since);
+  const top = clips.sort((a, b) => baseScore(b) - baseScore(a)).slice(0, 15);
+  const scored = [];
+  for (const message of top) scored.push({ message, score: await realScore(message) });
+  const best = scored.sort((a, b) => b.score - a.score).slice(0, 10);
+
+  const lines = best.map(({ message, score }, index) => t('topLine', {
+    place: MEDALS[index] ?? index + 1,
+    title: message.embeds[0].title,
+    url: message.url,
+    user: clipAuthorId(message),
+    emoji: VOTE_EMOJI,
+    score,
+  }).replace(/^\*\*(🥇|🥈|🥉)\.\*\*/, '$1'));
+  const embed = new EmbedBuilder().setColor(settings.warningColor)
+    .setTitle(t('topTitle', { period: t(`period${days}`) }))
+    .setDescription(lines.join('\n') || t('topEmpty'));
+  await interaction.editReply({ embeds: [embed], allowedMentions: { parse: [] } });
+}
+
 module.exports = {
   commands: [
     named(new SlashCommandBuilder(), ['clip', 'Send a clip to the clip wall'], ['klip', 'Klip beküldése a klipfalra'])
@@ -224,8 +270,11 @@ module.exports = {
         .setRequired(true).setMaxLength(100))
       .addStringOption((option) => named(option, ['game', 'Which game?'], ['jatek', 'Melyik játék?'])
         .addChoices(...settings.lfgGames.map((game) => choice(game.label, game.labelEn ?? game.label, game.label)))),
+    named(new SlashCommandBuilder(), ['cliptop', 'The best clips by votes'], ['kliptop', 'A legjobb klipek a szavazatok alapján'])
+      .addStringOption((option) => named(option, ['period', 'Which period?'], ['idoszak', 'Melyik időszak?'])
+        .addChoices(choice('7', 'Last 7 days', 'Utolsó 7 nap'), choice('30', 'Last 30 days', 'Utolsó 30 nap'))),
   ],
-  handlers: { clip: submitClip, 'clip:delete': deleteClip },
+  handlers: { clip: submitClip, cliptop: topClips, 'clip:delete': deleteClip },
   events: { [Events.ClientReady]: startWeeklyCheck },
   lastWeeklyCutoff,
   parseClipUrl,

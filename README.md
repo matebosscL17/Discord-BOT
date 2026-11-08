@@ -17,19 +17,21 @@ Ha `'en'`-re váltasz, a `settings.js` szövegeinek (kategóriák, kérdések, p
 
 | Parancs | Mit csinál | Ki használhatja |
 | --- | --- | --- |
-| `/changelog` | Bejelentés típussal, ikonokkal, opcionális pinggel | Szerver kezelése jog |
+| `/changelog` | Bejelentés előnézettel, típussal, verzióval, képpel és opcionális pinggel | Szerver kezelése jog |
 | `/ticket-panel` | Ticket gombok kategóriánként | Szerver kezelése jog |
-| `/ticket hozzaad`, `/ticket eltavolit` | Tag kezelése a ticketben | Support rang |
+| `/ticket add`, `/ticket remove` (`hozzaad`, `eltavolit`) | Tag kezelése a ticketben | Support rang |
 | `/ticket-stats` (`/ticket-statisztika`) | Ticket és csapat statisztika | Support rang |
-| `/rolepanel` (`/rangpanel`) | Rangválasztó gombok, legfeljebb 10 rang | Rangok kezelése jog |
-| `/kick`, `/ban`, `/unban` | Kirúgás, kitiltás, feloldás | Megfelelő jog |
+| `/rolepanel` (`/rangpanel`) | Rangválasztó gombokkal vagy lenyíló menüvel, "csak egy" móddal | Rangok kezelése jog |
+| `/kick`, `/ban`, `/unban` | Kirúgás, kitiltás, feloldás, esetszámmal | Megfelelő jog |
 | `/mute`, `/unmute` (`/nemit`, `/nemitas-fel`) | Némítás és feloldása | Tagok moderálása jog |
-| `/purge` (`/torles`) | 1-100 üzenet törlése | Üzenetek kezelése jog |
-| `/lfg` | Csapatkereső gombokkal, megteltekor privát hangszoba | Mindenki |
-| `/clip` (`/klip`) | Klip beküldése a klipfalra | Mindenki |
-| `/suggest` (`/otlet`) | Ötlet beküldése a javaslatdobozba | Mindenki |
-| `/createcategory`, `/createchannel` | Kategória és csatorna létrehozása | Csak tulajok |
-| `/help`, `/ping`, `/serverinfo` (`/szerverinfo`) | Súgó és adatok | Mindenki |
+| `/warn`, `/warnings`, `/clearwarns` (`/figyelmeztet`, `/figyelmeztetesek`, `/figyelmeztetes-torles`) | Figyelmeztetések, 3 után automatikus némítás | Tagok moderálása jog |
+| `/purge` (`/torles`) | 1-100 üzenet törlése, akár csak egy tagtól | Üzenetek kezelése jog |
+| `/lfg` | Csapatkereső tartaléklistával és szervezői gombokkal | Mindenki |
+| `/clip` (`/klip`) | Klip beküldése a klipfalra, kommentszállal | Mindenki |
+| `/cliptop` (`/kliptop`) | Az elmúlt 7 vagy 30 nap legjobb klipjei | Mindenki |
+| `/suggest` (`/otlet`) | Ötlet beküldése sorszámmal és beszélgetőszállal | Mindenki |
+| `/createcategory`, `/createchannel` | Kategória csatornákkal, csatorna leírással és lassított móddal | Csak tulajok |
+| `/help`, `/ping`, `/serverinfo` (`/szerverinfo`), `/userinfo` (`/taginfo`) | Kategorizált súgó és adatok | Mindenki |
 
 A ticketek sorszámot kapnak (pl. `🐞•ticket-0042`), és nyitáskor a kategóriától függő kérdéseket tesznek fel. A kérdéseket a `settings.js` fájl `ticketCategories` részében írhatod át, kategóriánként legfeljebb 5-öt.
 
@@ -54,7 +56,7 @@ A régi ticket gombok és a nyitott ticketek tovább működnek. A `/ticket-pane
 
 A moderációhoz több jog kell. Nyisd meg újra a meghívó linket az `APP_ID` kicserélésével, és válaszd ugyanazt a szervert:
 
-https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1099800112214
+https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1409037757526
 
 A bot rangja legyen minden olyan rang fölött, amit kioszt vagy moderál.
 
@@ -142,6 +144,10 @@ A tagok saját szobáit a bot hozza létre ebben a kategóriában. Ide ne tegyé
 `/otlet szoveg:...` kirak egy kártyát az ötletek csatornába (`settings.js`: `suggestions.channelId`) 👍 és 👎 szavazással. A support rang és a Szerver kezelése joggal rendelkezők indokkal elfogadhatják vagy elutasíthatják. A döntésről a beküldő privát üzenetet kap, ha engedélyezte, és a döntés a naplóba is bekerül.
 
 **A bot semmilyen csatornát vagy kategóriát nem hoz létre magától**, kivéve a ticketeket és a tagok ideiglenes hangszobáit. A klipek és ötletek csatornáját a `settings.js` fájlban add meg (`channelId`).
+
+## Moderáció
+
+Minden moderációs lépés sorszámot kap (pl. `#12`), ami megjelenik a naplóban, a moderátornak adott válaszban és a tagnak küldött privát üzenetben. A figyelmeztetéseket a `/warnings` paranccsal nézheted meg, a `/clearwarns` paranccsal törölheted (egyesével is, esetszám alapján). A `settings.js` fájl `warnAutoMute` beállítása szerint minden 3. figyelmeztetésnél a bot 60 percre automatikusan némít. Az esetek a `data/mod-cases.json` fájlban vannak.
 
 ## Tulaj parancsok
 

@@ -18,6 +18,10 @@ module.exports = {
   // A lenti szövegeket (kategóriák, kérdések, üdvözlés) ehhez igazítva írd át, ha 'en'-re váltasz.
   language: 'hu',
 
+  // Ennyi figyelmeztetés után a bot automatikusan némít (minden 3., 6., 9. ... figyelmeztetésnél).
+  // Kikapcsolás: warnAutoMute: null,
+  warnAutoMute: { count: 3, minutes: 60 },
+
   // A bot neve alatt megjelenő szöveg: "Nézi: ..."
   status: 'a szervert',
 
@@ -132,6 +136,10 @@ module.exports = {
     cooldownMinutes: 10,
   },
 
+  // Üdvözlés. Ha megadod a szabályok csatornáját, a kártya hivatkozik rá. Pl. rulesChannelId: '123...'
+  rulesChannelId: '',
+  // Búcsúüzenet az üdvözlő csatornában, amikor valaki kilép. Kikapcsolás: false
+  goodbyeMessage: true,
   welcomeMessage: 'Üdv a szerveren, {user}! Örülünk, hogy itt vagy. 🎉',
   welcomeMessageEn: 'Welcome to the server, {user}! Glad to have you here. 🎉',
 };

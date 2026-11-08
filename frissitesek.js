@@ -5,6 +5,41 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.8.0',
+    cim: 'Minden funkció megújult',
+    valtozasok: [
+      '+ Javaslatdoboz: sorszám, állapot, "Átgondolás alatt" döntés és beszélgetőszál minden ötlethez',
+      '+ Klipfal: /cliptop toplista az elmúlt 7 vagy 30 nap legjobb klipjeivel, és kommentszál minden kliphez',
+      '+ Rangválasztó: lenyíló menü és "csak egy választható" mód',
+      '+ Saját hangszobák: elrejtés, tulajdonjog átadása és állapotkijelzés a panelen',
+      '+ Szebb üdvözlés és búcsúüzenet, kategorizált /help, új /userinfo parancs',
+    ],
+    privatValtozasok: [
+      '+ Moderáció: /warn, /warnings, /clearwarns, sorszámozott esetek, automatikus némítás 3 figyelmeztetés után',
+      '+ /purge egy tag üzeneteire szűrve, szebb moderációs napló és privát értesítés',
+      '+ /changelog: előnézet Közzététel és Mégse gombbal, verziószám és kép',
+      '+ /createcategory csatornákkal együtt, /createchannel leírással, lassított móddal és létszámmal',
+      '! A beszélgetőszálakhoz új jog kell: nyisd meg újra a meghívó linket a README-ből',
+    ],
+    en: {
+      cim: 'Every feature got an upgrade',
+      valtozasok: [
+        '+ Suggestion box: numbers, status, "under consideration" decision and a discussion thread for every idea',
+        '+ Clip wall: /cliptop leaderboard with the best clips of the last 7 or 30 days, and a comment thread for every clip',
+        '+ Role picker: dropdown menu and "only one" mode',
+        '+ Personal voice rooms: hide, transfer ownership and a status display on the panel',
+        '+ Nicer welcome and goodbye messages, grouped /help, new /userinfo command',
+      ],
+      privatValtozasok: [
+        '+ Moderation: /warn, /warnings, /clearwarns, numbered cases, automatic timeout after 3 warnings',
+        '+ /purge filtered to one member, nicer moderation log and DM notice',
+        '+ /changelog: preview with Publish and Cancel buttons, version number and image',
+        '+ /createcategory with channels inside, /createchannel with description, slowmode and user limit',
+        '! Discussion threads need a new permission: open the invite link from the README again',
+      ],
+    },
+  },
+  {
     verzio: '2.7.0',
     cim: 'Megújult csapatkereső',
     valtozasok: [

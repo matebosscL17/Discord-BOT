@@ -24,7 +24,11 @@ for (const { file, handlers: moduleHandlers = {} } of modules) {
     handlers.set(key, handler);
   }
 }
-const commands = modules.flatMap((module) => (module.commands ?? []).map((command) => command.toJSON()));
+const commandGroups = modules.map((module) => ({
+  file: module.file,
+  commands: (module.commands ?? []).map((command) => command.toJSON()),
+}));
+const commands = commandGroups.flatMap((group) => group.commands);
 
 const intents = new Set([GatewayIntentBits.Guilds]);
 for (const module of modules) (module.intents?.() ?? []).forEach((intent) => intents.add(intent));
@@ -33,7 +37,7 @@ const client = new Client({
   intents: [...intents],
   presence: { activities: [{ name: settings.status, type: ActivityType.Watching }] },
 });
-const context = { commands };
+const context = { commands, commandGroups };
 
 // "ticket:open:hiba" esetén a "ticket:open" kezelő fut, és a "hiba" paraméterként érkezik.
 function resolveHandler(id) {

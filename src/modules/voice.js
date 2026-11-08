@@ -4,7 +4,7 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const {
-  createRoom, deleteIfEmpty, ensureSetup, isTempRoom, roomPanel,
+  createRoom, deleteIfEmpty, ensureSetup, isTempRoom, panelFor,
 } = require('../voiceRooms');
 const { ephemeral } = require('../utils');
 const { translator } = require('../i18n');
@@ -28,6 +28,8 @@ const tr = translator({
     kicked: '🚫 {name} kirúgva a szobából.',
     allowed: '✅ {name} beléphet a szobába.',
     roomName: '🔊 • {name} szobája',
+    transferred: '👑 A szoba új tulajdonosa: <@{user}>',
+    cannotTransfer: 'Neki nem adhatod át a szobát.',
   },
   en: {
     notTemp: 'This is not a temporary room.',
@@ -47,6 +49,8 @@ const tr = translator({
     kicked: '🚫 {name} was kicked from the room.',
     allowed: '✅ {name} can now join the room.',
     roomName: "🔊 • {name}'s room",
+    transferred: '👑 The new owner of this room is <@{user}>',
+    cannotTransfer: 'You cannot transfer the room to them.',
   },
 });
 
@@ -95,6 +99,7 @@ async function rename(interaction, [ownerId]) {
   await interaction.editReply(result === 'done'
     ? tr.user(interaction)('renamed')
     : tr.user(interaction)('renameSlow'));
+  await interaction.message?.edit(panelFor(interaction.channel, ownerId)).catch(() => {});
 }
 
 async function showLimit(interaction, [ownerId]) {
@@ -112,6 +117,7 @@ async function setLimit(interaction, [ownerId]) {
   }
   await interaction.channel.setUserLimit(limit);
   await interaction.reply(ephemeral(tr.user(interaction)(limit ? 'limitSet' : 'limitNone', { limit })));
+  await interaction.message?.edit(panelFor(interaction.channel, ownerId)).catch(() => {});
 }
 
 async function toggleLock(interaction, [ownerId]) {
@@ -120,16 +126,45 @@ async function toggleLock(interaction, [ownerId]) {
   const everyone = guild.roles.everyone;
   const locked = !channel.permissionsFor(everyone).has(PermissionFlagsBits.Connect);
   await channel.permissionOverwrites.edit(everyone, { Connect: locked ? null : false });
-  await interaction.update(roomPanel(ownerId, !locked));
+  await interaction.update(panelFor(channel, ownerId));
+}
+
+async function toggleHide(interaction, [ownerId]) {
+  if (!(await canManage(interaction, ownerId))) return;
+  const { channel, guild } = interaction;
+  const everyone = guild.roles.everyone;
+  const hidden = !channel.permissionsFor(everyone).has(PermissionFlagsBits.ViewChannel);
+  // Rejtett szobát csak az lát, aki benne van, vagy akit beengedtek.
+  if (!hidden) {
+    for (const memberId of channel.members.keys()) {
+      await channel.permissionOverwrites.edit(memberId, { ViewChannel: true, Connect: true }).catch(() => {});
+    }
+  }
+  await channel.permissionOverwrites.edit(everyone, { ViewChannel: hidden ? null : false });
+  await interaction.update(panelFor(channel, ownerId));
+}
+
+async function transfer(interaction, [ownerId]) {
+  if (!(await canManage(interaction, ownerId))) return;
+  const targetId = interaction.values[0];
+  const target = interaction.users.get(targetId);
+  if (!target || target.bot || targetId === ownerId) {
+    return void (await interaction.reply(ephemeral(tr.user(interaction)('cannotTransfer'))));
+  }
+  const { channel } = interaction;
+  await channel.permissionOverwrites.edit(targetId, {
+    ViewChannel: true, Connect: true, Speak: true, SendMessages: true,
+  });
+  await interaction.update(panelFor(channel, targetId));
+  await channel.send({ content: tr.server('transferred', { user: targetId }), allowedMentions: { users: [targetId] } });
 }
 
 async function claim(interaction, [ownerId]) {
-  const { channel, user, guild } = interaction;
+  const { channel, user } = interaction;
   if (!(await isTempRoom(channel))) return void (await interaction.reply(ephemeral(tr.user(interaction)('notTemp'))));
   if (!channel.members.has(user.id)) return void (await interaction.reply(ephemeral(tr.user(interaction)('joinFirst'))));
   if (channel.members.has(ownerId)) return void (await interaction.reply(ephemeral(tr.user(interaction)('ownerHere'))));
-  const locked = !channel.permissionsFor(guild.roles.everyone).has(PermissionFlagsBits.Connect);
-  await interaction.update(roomPanel(user.id, locked));
+  await interaction.update(panelFor(channel, user.id));
 }
 
 async function kick(interaction, [ownerId]) {
@@ -208,6 +243,8 @@ module.exports = {
     'vc:limit-modal': setLimit,
     'vc:lock': toggleLock,
     'vc:claim': claim,
+    'vc:hide': toggleHide,
+    'vc:transfer': transfer,
     'vc:kick': kick,
     'vc:allow': allow,
   },
