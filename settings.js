@@ -55,8 +55,8 @@ module.exports = {
   // (azonosító alapján, vagy ha az nincs megadva, név alapján). Csak a tagok saját szobáit hozza létre.
   // FONTOS: ebben a kategóriában minden üres hangcsatornát töröl, kivéve a létrehozó csatornát.
   tempVoice: {
-    categoryId: '',
-    hubId: '',
+    categoryId: '1567406049802195104',
+    hubId: '1567406051215548488',
     categoryName: 'I D E I G L E N E S V C',
     // A régi nevén is megtalálja, ha még nem nevezted át.
     categoryOldNames: ['🔊 • Ideiglenes szobák'],
