@@ -30,6 +30,7 @@ Ha `'en'`-re váltasz, a `settings.js` szövegeinek (kategóriák, kérdések, p
 | `/clip` (`/klip`) | Klip beküldése a klipfalra, kommentszállal | Mindenki |
 | `/cliptop` (`/kliptop`) | Az elmúlt 7 vagy 30 nap legjobb klipjei | Mindenki |
 | `/suggest` (`/otlet`) | Ötlet beküldése sorszámmal és beszélgetőszállal | Mindenki |
+| `/security` (`/vedelem`) | Védelem állapota, megbízható lista, raid mód, zárolás | Tulajok és megbízhatók |
 | `/createcategory`, `/createchannel` | Kategória csatornákkal, csatorna leírással és lassított móddal | Csak tulajok |
 | `/help`, `/ping`, `/serverinfo` (`/szerverinfo`), `/userinfo` (`/taginfo`) | Kategorizált súgó és adatok | Mindenki |
 
@@ -56,7 +57,7 @@ A régi ticket gombok és a nyitott ticketek tovább működnek. A `/ticket-pane
 
 A moderációhoz több jog kell. Nyisd meg újra a meghívó linket az `APP_ID` kicserélésével, és válaszd ugyanazt a szervert:
 
-https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1409037757526
+https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot+applications.commands&permissions=1409574628566
 
 A bot rangja legyen minden olyan rang fölött, amit kioszt vagy moderál.
 
@@ -144,6 +145,24 @@ A tagok saját szobáit a bot hozza létre ebben a kategóriában. Ide ne tegyé
 `/otlet szoveg:...` kirak egy kártyát az ötletek csatornába (`settings.js`: `suggestions.channelId`) 👍 és 👎 szavazással. A support rang és a Szerver kezelése joggal rendelkezők indokkal elfogadhatják vagy elutasíthatják. A döntésről a beküldő privát üzenetet kap, ha engedélyezte, és a döntés a naplóba is bekerül.
 
 **A bot semmilyen csatornát vagy kategóriát nem hoz létre magától**, kivéve a ticketeket és a tagok ideiglenes hangszobáit. A klipek és ötletek csatornáját a `settings.js` fájlban add meg (`channelId`).
+
+## Biztonság (raidvédelem, anti-nuke)
+
+**Fontos beállítások, különben a védelem nem tud működni:**
+1. A szerver beállításaiban (**Rangok**) húzd a bot rangját a **legfelső** helyre. A bot csak a nála alacsonyabb rangú támadókat tudja megállítani.
+2. A Discord fejlesztői oldalán a **Bot** fülön kapcsold be a **SERVER MEMBERS INTENT** opciót. Enélkül a bot el sem indul, mert a raidvédelemnek látnia kell a belépéseket.
+3. Nyisd meg újra a meghívó linket, mert az ellenőrzési napló olvasásához és a webhookok törléséhez új jog kell.
+4. **Vedd fel a megbízható adminokat** a `/security whitelist-add` paranccsal, tagként vagy rangként. Aki nincs a listán, azt a bot büntetheti, ha veszélyes jogot vagy rangot oszt ki. Alapból csak a tulajdonos és az `ownerRoleIds` rangok megbízhatók.
+
+**Mit csinál:**
+- **Raidvédelem:** ha 10 másodpercen belül legalább 8 ember lép be, a bot 10 percre raid módba kapcsol, riaszt a naplóban, és privát üzenetet küld a tulajdonosnak. Raid módban az újonnan érkezőket a raid mód végéig némítja. **Senkit nem rúg ki.**
+- **Spamvédelem:** 5 másodperc alatt 6 üzenet, vagy egy üzenetben legalább 5 említés esetén a bot törli az üzeneteket, és 10 percre némít. A megbízhatókra és az Üzenetek kezelése joggal rendelkezőkre nem vonatkozik.
+- **Anti-nuke:** a Discord ellenőrzési naplóját figyeli. Ha valaki 10 másodpercen belül túl sok csatornát vagy rangot töröl vagy hoz létre, bannol, kirúg vagy webhookot készít, a bot elveszi minden rangját, és riaszt. A nem megbízható emberek webhookjait azonnal törli.
+- **Botok és veszélyes jogok:** a nem megbízható ember által behívott botot kirúgja. Ha nem megbízható ember adminjogot ad egy rangnak, vagy veszélyes rangot oszt ki, a bot visszacsinálja, és megbünteti.
+
+**Parancsok:** `/security status`, `whitelist-add`, `whitelist-remove`, `raidmode` (be vagy ki), `lockdown` (minden szöveges csatorna zárolása, majd az eredeti állapot visszaállítása).
+
+Minden határérték és büntetés a `settings.js` fájl `security` részében állítható. A megbízható lista és a zárolás állapota a `data/security.json` fájlban van.
 
 ## Moderáció
 

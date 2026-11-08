@@ -13,6 +13,64 @@ module.exports = {
   // Példa: ownerRoleIds: ['123456789012345678'],
   ownerRoleIds: [],
 
+  // ===== Biztonság: raidvédelem, spamvédelem, anti-nuke =====
+  // A bot rangja legyen a LEGFELSŐ a rangok listájában, különben a fölötte lévőket nem tudja megállítani.
+  security: {
+    enabled: true,
+    // Megbízható felhasználók és rangok azonosítói. Rájuk nem vonatkozik az anti-nuke és a spamvédelem.
+    // A szerver tulajdonosa és a fenti ownerRoleIds rangok mindig megbízhatók.
+    // A /security whitelist-add paranccsal Discordból is bővítheted.
+    whitelist: [],
+
+    raid: {
+      enabled: true,
+      // Ha ennyi ember lép be ennyi másodpercen belül, a bot raid módba kapcsol
+      joinThreshold: 8,
+      joinWindowSeconds: 10,
+      // Raid módban az újonnan belépők: 'timeout' (némítás a raid mód végéig) vagy 'none' (csak riasztás).
+      // A bot senkit nem rúg ki.
+      action: 'timeout',
+      // Ennyi perc után a raid mód magától kikapcsol
+      durationMinutes: 10,
+      // Raid módba lépéskor az összes csatorna zárolása is (mint a /security lockdown)
+      autoLockdown: false,
+      // Raid módon kívül a nagyon friss fiókok kezelése: 'none' vagy 'timeout'
+      youngAccountAction: 'none',
+      minAccountAgeDays: 3,
+    },
+
+    spam: {
+      enabled: true,
+      // Ennyi üzenet ennyi másodpercen belül már spamnek számít
+      messages: 6,
+      windowSeconds: 5,
+      // Ennyi vagy több említés (tag, rang, @everyone) egy üzenetben
+      mentions: 5,
+      timeoutMinutes: 10,
+    },
+
+    nuke: {
+      enabled: true,
+      // Ennyi másodpercen belül ennyi művelet egy embertől már támadásnak számít
+      windowSeconds: 10,
+      limits: {
+        channelDelete: 3,
+        channelCreate: 5,
+        roleDelete: 3,
+        roleCreate: 5,
+        ban: 3,
+        kick: 5,
+        webhookCreate: 3,
+      },
+      // A támadó büntetése: 'strip' (minden rang elvétele), 'kick' vagy 'ban'
+      punishment: 'strip',
+      // Nem megbízható ember által behívott botot azonnal kirúg
+      blockBots: true,
+      // Nem megbízható ember által adott veszélyes jogot (pl. Administrator) azonnal visszavon
+      protectDangerousPermissions: true,
+    },
+  },
+
   // A közös üzenetek nyelve (panelek, ticketek, napló, kártyák): 'hu' vagy 'en'.
   // A tagoknak szóló válaszok mindig a saját Discord-nyelvüket követik.
   // A lenti szövegeket (kategóriák, kérdések, üdvözlés) ehhez igazítva írd át, ha 'en'-re váltasz.

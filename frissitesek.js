@@ -5,6 +5,35 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.9.0',
+    cim: 'Erős szervervédelem',
+    valtozasok: [
+      '+ Raid- és spamvédelem: a szerver mostantól automatikusan védekezik a támadások ellen',
+    ],
+    privatValtozasok: [
+      '+ Raidvédelem: tömeges belépésnél raid mód, az új belépők némítása (kirúgás nélkül), riasztás a tulajnak',
+      '+ Spamvédelem: üzenetáradat és tömeges pingelés esetén törlés és némítás',
+      '+ Anti-nuke: tömeges csatorna- és rangtörlés, ban, kick, webhook esetén minden rang elvétele és riasztás',
+      '+ Nem engedélyezett botok kirúgása, veszélyes jogok és rangok automatikus visszavonása',
+      '+ /security: állapot, megbízható lista, raid mód, zárolás',
+      '! FONTOS: a bot rangja legyen a legfelső, a megbízható adminokat vedd fel a /security whitelist-add paranccsal',
+    ],
+    en: {
+      cim: 'Strong server protection',
+      valtozasok: [
+        '+ Raid and spam protection: the server now defends itself against attacks automatically',
+      ],
+      privatValtozasok: [
+        '+ Raid protection: raid mode on mass joins, new joiners timed out (no kicks), alert to the owner',
+        '+ Spam protection: deletes and times out on message floods and mass mentions',
+        '+ Anti-nuke: removes all roles and alerts on mass channel/role deletion, bans, kicks or webhooks',
+        '+ Unapproved bots are kicked, dangerous permissions and roles are reverted automatically',
+        '+ /security: status, trusted list, raid mode, lockdown',
+        '! IMPORTANT: put the bot role at the top and add trusted admins with /security whitelist-add',
+      ],
+    },
+  },
+  {
     verzio: '2.8.0',
     cim: 'Minden funkció megújult',
     valtozasok: [
