@@ -21,12 +21,49 @@ module.exports = {
     description: 'Válaszd ki, miben segíthetünk, és nyílik egy privát csatorna a csapattal.',
   },
   // Legfeljebb 5 kategória. Az "id" csak angol kisbetű és szám legyen.
+  // Kategóriánként legfeljebb 5 kérdés. "long: true" = több soros válasz, "optional: true" = nem kötelező.
+  // A kérdés szövege legfeljebb 45 karakter lehet.
   ticketCategories: [
-    { id: 'hiba', label: 'Hibajelentés', emoji: '🐞' },
-    { id: 'kerdes', label: 'Kérdés', emoji: '❓' },
-    { id: 'jelentes', label: 'Tag jelentése', emoji: '🚨' },
-    { id: 'egyeb', label: 'Egyéb', emoji: '💬' },
+    {
+      id: 'hiba',
+      label: 'Hibajelentés',
+      emoji: '🐞',
+      questions: [
+        { label: 'Mi a hiba?', long: true },
+        { label: 'Hol és mikor történt?' },
+        { label: 'Kép vagy videó linkje', optional: true },
+      ],
+    },
+    {
+      id: 'kerdes',
+      label: 'Kérdés',
+      emoji: '❓',
+      questions: [{ label: 'Mi a kérdésed?', long: true }],
+    },
+    {
+      id: 'jelentes',
+      label: 'Tag jelentése',
+      emoji: '🚨',
+      questions: [
+        { label: 'Kit jelentesz? (név)' },
+        { label: 'Mi történt?', long: true },
+        { label: 'Bizonyíték linkje (kép, videó)', optional: true },
+      ],
+    },
+    {
+      id: 'egyeb',
+      label: 'Egyéb',
+      emoji: '💬',
+      questions: [{ label: 'Miben segíthetünk?', long: true }],
+    },
   ],
+
+  ticketInactivity: {
+    // Ennyi óra csend után a bot megkérdezi, kell-e még a ticket
+    remindHours: 24,
+    // Ha az emlékeztető után ennyi óráig senki nem ír, a bot lezárja
+    closeHours: 24,
+  },
 
   changelogTypes: [
     { id: 'frissites', label: 'Frissítés', emoji: '📢', color: 0x5865f2 },

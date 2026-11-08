@@ -1,29 +1,38 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-// A bot által megjegyzett csatorna-azonosítók. Ez a fájl nem kerül fel GitHubra.
-const FILE = path.join(__dirname, '..', 'data', 'ids.json');
+// A bot saját adatai (azonosítók, sorszámok, statisztika). A data mappa nem kerül fel GitHubra.
+const DIR = path.join(__dirname, '..', 'data');
 
-function readAll() {
+function readJson(name, fallback) {
   try {
-    return JSON.parse(fs.readFileSync(FILE, 'utf8'));
+    return JSON.parse(fs.readFileSync(path.join(DIR, `${name}.json`), 'utf8'));
   } catch {
-    return {};
+    return fallback;
   }
 }
 
-const getId = (key) => readAll()[key];
+function writeJson(name, data) {
+  try {
+    fs.mkdirSync(DIR, { recursive: true });
+    const file = path.join(DIR, `${name}.json`);
+    // Előbb ideiglenes fájlba ír, így áramszünetnél sem sérül meg a régi.
+    fs.writeFileSync(`${file}.tmp`, JSON.stringify(data, null, 2));
+    fs.renameSync(`${file}.tmp`, file);
+  } catch (error) {
+    console.error(`Nem sikerült menteni (${name}):`, error.message);
+  }
+}
+
+const getId = (key) => readJson('ids', {})[key];
 
 function saveId(key, id) {
-  const data = readAll();
+  const data = readJson('ids', {});
   if (data[key] === id) return;
   data[key] = id;
-  try {
-    fs.mkdirSync(path.dirname(FILE), { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('Nem sikerült menteni az azonosítót:', error.message);
-  }
+  writeJson('ids', data);
 }
 
-module.exports = { getId, saveId };
+module.exports = {
+  getId, saveId, readJson, writeJson,
+};

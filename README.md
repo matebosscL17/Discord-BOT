@@ -9,6 +9,7 @@ Moduláris Discord bot. Minden funkció külön fájl a `src/modules` mappában.
 | `/changelog` | Bejelentés típussal, ikonokkal, opcionális pinggel | Szerver kezelése jog |
 | `/ticket-panel` | Ticket gombok kategóriánként | Szerver kezelése jog |
 | `/ticket hozzaad`, `/ticket eltavolit` | Tag kezelése a ticketben | Support rang |
+| `/ticket-statisztika` | Ticket és csapat statisztika | Support rang |
 | `/rangpanel` | Rangválasztó gombok, legfeljebb 10 rang | Rangok kezelése jog |
 | `/kick`, `/ban`, `/unban` | Kirúgás, kitiltás, feloldás | Megfelelő jog |
 | `/nemit`, `/nemitas-fel` | Némítás és feloldása | Tagok moderálása jog |
@@ -19,7 +20,13 @@ Moduláris Discord bot. Minden funkció külön fájl a `src/modules` mappában.
 | `/createcategory`, `/createchannel` | Kategória és csatorna létrehozása | Csak tulajok |
 | `/help`, `/ping`, `/szerverinfo` | Súgó és adatok | Mindenki |
 
-A ticketben van átvétel gomb és lezárási indok. Lezáráskor a bot naplóz, és megpróbál privát üzenetet küldeni a ticket nyitójának.
+A ticketek sorszámot kapnak (pl. `🐞•ticket-0042`), és nyitáskor a kategóriától függő kérdéseket tesznek fel. A kérdéseket a `settings.js` fájl `ticketCategories` részében írhatod át, kategóriánként legfeljebb 5-öt.
+
+A ticketben van átvétel gomb és lezárási indok. Lezáráskor a bot naplóz, és megpróbál privát üzenetet küldeni a ticket nyitójának. Ha `ENABLE_TRANSCRIPT=true`, a naplóba böngészőben megnyitható HTML mentés is kerül.
+
+Ha egy ticketbe 24 óráig senki nem ír, a bot megkérdezi, kell-e még. Ha utána újabb 24 óráig nincs válasz, lezárja. Az időket a `settings.js` fájl `ticketInactivity` részében állíthatod.
+
+A sorszám és a statisztika a `data` mappában van. Ezt ne töröld.
 A `/changelog` szövegében a `+` zöld, a `-` piros, a `!` sárga ikon lesz a sor elején.
 
 ## Frissítés a régi verzióról

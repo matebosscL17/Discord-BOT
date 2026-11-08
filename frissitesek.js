@@ -4,6 +4,20 @@
 // Bármelyik elhagyható. A sorok elején a + zöld, a - piros, a ! sárga ikon lesz.
 module.exports = [
   {
+    verzio: '2.5.0',
+    cim: 'Megújult ticket rendszer',
+    valtozasok: [
+      '+ Minden ticket sorszámot kap, pl. ticket-0042',
+      '+ Nyitáskor a ticket típusától függő kérdéseket kapsz, így gyorsabban tudunk segíteni',
+      '+ Ha egy ticketbe sokáig nem ír senki, a bot megkérdezi, kell-e még, és ha nem jön válasz, lezárja',
+    ],
+    privatValtozasok: [
+      '+ /ticket-statisztika: átvételek, lezárások, átlagos átvételi és megoldási idő',
+      '+ A ticket mentése böngészőben megnyitható HTML fájl lett',
+      '! A ticket panelt érdemes újra kirakni a /ticket-panel paranccsal',
+    ],
+  },
+  {
     verzio: '2.4.2',
     cim: 'PM2 beállítás',
     privatValtozasok: [
