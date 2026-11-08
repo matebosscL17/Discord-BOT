@@ -117,7 +117,13 @@ A `valtozasok` sorai a nyilvános Changelog csatornába, a `privatValtozasok` so
 
 ## Csapatkereső
 
-`/lfg jatek:CS2 letszam:5` kirak egy kártyát csatlakozás gombbal. Ha van a játékkal egyező nevű rang, csak a tagjai csatlakozhatnak. Amikor megtelik, a bot privát hangszobát nyit a csapatnak. A játékokat a `settings.js` fájl `lfgGames` listájában írhatod át. Minden kártya 3 óra után lejár.
+`/lfg jatek:CS2 letszam:5` kirak egy kártyát. Ha van a játékkal egyező nevű rang, csak a tagjai csatlakozhatnak. Amikor megtelik, a bot privát hangszobát nyit a csapatnak.
+
+- **Tartaléklista:** ha a csapat tele van, a **Tartaléknak** gombbal sorba lehet állni (alapból legfeljebb 5 fő). Ha valaki kilép vagy a szervező kiveszi, a következő tartalék automatikusan bekerül, és belépési jogot kap a hangszobához.
+- **Szervezői gombok:** **Indítás most** (legalább 2 fővel), **Tag kivétele**, **Létszám** (2-10), **Lezárás**. Ezeket csak a szervező és az Üzenetek kezelése joggal rendelkezők használhatják.
+- Indítás után a kártya aktív marad, amíg a szervező le nem zárja, vagy le nem jár. A kártya 3 óra után lejár.
+
+A játékokat, a színeket és a tartaléklimitet a `settings.js` fájl `lfgGames` és `lfgMaxReserves` sorában írhatod át.
 
 ## Saját hangszobák
 

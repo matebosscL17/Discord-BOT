@@ -92,13 +92,15 @@ module.exports = {
   // /lfg játékok. Legfeljebb 25 sor. A "roleName" a játékrang neve: ha van ilyen rang,
   // csak a tagjai csatlakozhatnak. Ha nincs, bárki jöhet.
   lfgGames: [
-    { id: 'minecraft', label: 'Minecraft', emoji: '⛏️', roleName: 'Minecraft' },
-    { id: 'cs2', label: 'CS2', emoji: '🔫', roleName: 'CS2' },
-    { id: 'valorant', label: 'Valorant', emoji: '🎯', roleName: 'Valorant' },
-    { id: 'gta', label: 'GTA V', emoji: '🚗', roleName: 'GTA V' },
-    { id: 'roblox', label: 'Roblox', emoji: '🧱', roleName: 'Roblox' },
+    { id: 'minecraft', label: 'Minecraft', emoji: '⛏️', roleName: 'Minecraft', color: 0x62b246 },
+    { id: 'cs2', label: 'CS2', emoji: '🔫', roleName: 'CS2', color: 0xf0a030 },
+    { id: 'valorant', label: 'Valorant', emoji: '🎯', roleName: 'Valorant', color: 0xfd4556 },
+    { id: 'gta', label: 'GTA V', emoji: '🚗', roleName: 'GTA V', color: 0x2fa84f },
+    { id: 'roblox', label: 'Roblox', emoji: '🧱', roleName: 'Roblox', color: 0x3b82f6 },
   ],
   lfgExpiryHours: 3,
+  // Ennyien állhatnak sorba tartaléknak egy kártyán
+  lfgMaxReserves: 5,
 
   // A kategóriát és a létrehozó hangcsatornát TE hozod létre, a bot csak megkeresi őket
   // (azonosító alapján, vagy ha az nincs megadva, név alapján). Csak a tagok saját szobáit hozza létre.

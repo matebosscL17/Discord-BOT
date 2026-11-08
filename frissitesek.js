@@ -5,6 +5,25 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.7.0',
+    cim: 'Megújult csapatkereső',
+    valtozasok: [
+      '+ Tartaléklista: ha a csapat tele van, beállhatsz tartaléknak, és ha valaki kilép, automatikusan bekerülsz',
+      '+ A szervező elindíthatja a csapatot kevesebb emberrel, kivehet tagot és módosíthatja a létszámot',
+      '+ Szebb kártya: játékonkénti szín, foglaltságjelző sáv és állapot',
+      '! Indítás után a kártya aktív marad, az új tagok belépési jogot kapnak a hangszobához',
+    ],
+    en: {
+      cim: 'Improved group finder',
+      valtozasok: [
+        '+ Reserve list: if the group is full, join as a reserve and get in automatically when someone leaves',
+        '+ The host can start with fewer people, remove members and change the group size',
+        '+ Nicer card: colour per game, progress bar and status',
+        '! After starting, the card stays active and new members get access to the voice room',
+      ],
+    },
+  },
+  {
     verzio: '2.6.0',
     cim: 'Angol nyelv',
     valtozasok: [
