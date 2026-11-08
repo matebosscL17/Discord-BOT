@@ -1,7 +1,9 @@
+const path = require('node:path');
 const settings = require('../settings');
 
 // A .env fájl betöltése. Ha a hosting panelen adod meg az értékeket, nem kell .env.
-try { process.loadEnvFile(); } catch {}
+// A bot mappájából tölti be, akkor is, ha máshonnan indítod (pl. PM2-vel).
+try { process.loadEnvFile(path.join(__dirname, '..', '.env')); } catch {}
 
 const env = (name) => process.env[name]?.trim() || undefined;
 

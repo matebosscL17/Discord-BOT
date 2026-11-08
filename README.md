@@ -125,6 +125,32 @@ A `/createcategory` és a `/createchannel` parancsot a szerver tulajdonosa haszn
 
 Ha megadsz `lathato_rang` értéket, a kategóriát vagy csatornát csak az a rang látja.
 
+## Futtatás PM2-vel
+
+A PM2 újraindítja a botot, ha összeomlik, és a Termux munkamenet bezárása után is tovább fut.
+
+Első alkalommal:
+
+```bash
+npm install -g pm2
+cd ~/Discord-BOT
+termux-wake-lock
+npm run pm2
+```
+
+Frissítés: `npm run update`
+
+| Parancs | Mire jó |
+| --- | --- |
+| `pm2 status` | Fut-e a bot |
+| `pm2 logs discord-bot` | A bot naplója, kilépés: Ctrl + C |
+| `pm2 restart discord-bot` | Újraindítás |
+| `pm2 stop discord-bot` | Leállítás |
+
+A telefon vagy a Termux újraindítása után: `termux-wake-lock`, majd `pm2 resurrect`.
+
+Mellette ne használd az `npm start` parancsot, mert akkor két példány futna.
+
 ## Testreszabás
 
 A `settings.js` fájlban átírhatod a színeket, a szövegeket, a ticket kategóriákat és a rangok ikonjait. Utána indítsd újra a botot.

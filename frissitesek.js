@@ -4,6 +4,14 @@
 // Bármelyik elhagyható. A sorok elején a + zöld, a - piros, a ! sárga ikon lesz.
 module.exports = [
   {
+    verzio: '2.4.2',
+    cim: 'PM2 beállítás',
+    privatValtozasok: [
+      '+ ecosystem.config.js: a bot PM2-vel stabilabban fut, összeomlás után magától újraindul',
+      '+ Frissítés egy paranccsal: npm run update',
+    ],
+  },
+  {
     verzio: '2.4.1',
     cim: 'A bot nem hoz létre csatornákat',
     privatValtozasok: [

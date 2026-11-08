@@ -1,9 +1,13 @@
 {
   "name": "discord-bot",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "Moduláris Discord bot: ticket, changelog, játékrangok, moderáció, üdvözlés",
   "main": "index.js",
-  "scripts": { "start": "node index.js" },
+  "scripts": {
+    "start": "node index.js",
+    "pm2": "pm2 start ecosystem.config.js && pm2 save",
+    "update": "git pull && npm install && pm2 reload ecosystem.config.js --update-env && pm2 save"
+  },
   "engines": { "node": ">=20.12" },
   "dependencies": { "discord.js": "^14.18.0" }
 }
