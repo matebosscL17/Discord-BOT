@@ -152,12 +152,22 @@ A tagok saját szobáit a bot hozza létre ebben a kategóriában. Ide ne tegyé
 1. A szerver beállításaiban (**Rangok**) húzd a bot rangját a **legfelső** helyre. A bot csak a nála alacsonyabb rangú támadókat tudja megállítani.
 2. A Discord fejlesztői oldalán a **Bot** fülön kapcsold be a **SERVER MEMBERS INTENT** opciót. Enélkül a bot el sem indul, mert a raidvédelemnek látnia kell a belépéseket.
 3. Nyisd meg újra a meghívó linket, mert az ellenőrzési napló olvasásához és a webhookok törléséhez új jog kell.
-4. **Vedd fel a megbízható adminokat** a `/security whitelist-add` paranccsal, tagként vagy rangként. Aki nincs a listán, azt a bot büntetheti, ha veszélyes jogot vagy rangot oszt ki. Alapból csak a tulajdonos és az `ownerRoleIds` rangok megbízhatók.
+4. **Ellenőrizd a megbízható rangokat:** a **Founder** és az **Ügyfélszolgálat** rang, valamint minden fölöttük lévő rang megbízható. A `/security status` paranccsal megnézheted, hogy a bot megtalálta-e őket.
+5. **A többi botot vedd fel a megbízható listára**, ha meg szeretnéd tartani őket, például: `/security whitelist-add tag:@MásikBot`. Enélkül bármilyen szervermódosításnál a bot kirúgja őket, például ha rangot osztanak ki.
 
 **Mit csinál:**
 - **Raidvédelem:** ha 10 másodpercen belül legalább 8 ember lép be, a bot 10 percre raid módba kapcsol, riaszt a naplóban, és privát üzenetet küld a tulajdonosnak. Raid módban az újonnan érkezőket a raid mód végéig némítja. **Senkit nem rúg ki.**
 - **Spamvédelem:** 5 másodperc alatt 6 üzenet, vagy egy üzenetben legalább 5 említés esetén a bot törli az üzeneteket, és 10 percre némít. A megbízhatókra és az Üzenetek kezelése joggal rendelkezőkre nem vonatkozik.
-- **Anti-nuke:** a Discord ellenőrzési naplóját figyeli. Ha valaki 10 másodpercen belül túl sok csatornát vagy rangot töröl vagy hoz létre, bannol, kirúg vagy webhookot készít, a bot elveszi minden rangját, és riaszt. A nem megbízható emberek webhookjait azonnal törli.
+- **Anti-nuke, szigorú mód (alapértelmezett):** aki a **Founder** és az **Ügyfélszolgálat** rang alatt van, és minden idegen bot, az **semmilyen szervermódosítást nem végezhet**. Ide tartozik a csatorna és a rang létrehozása, törlése és módosítása, a csatornajogok, a rangkiosztás, a ban, a kick, a becenév és a némítás, a webhook, a bot behívása, a szerverbeállítás és az emoji is. A bot minden ilyen lépést azonnal visszacsinál, ahol a Discord engedi:
+  - a törölt csatornát vagy rangot újra létrehozza,
+  - a létrehozottat törli,
+  - a bant feloldja,
+  - a kiosztott rangot visszaveszi,
+  - a régi nevet és jogokat visszaállítja.
+
+  Az elkövetőt megbünteti: elveszi minden rangját és 1 órára némítja, idegen botnál pedig kirúgja. A naplóba és neked privát üzenetben is riaszt.
+- A kirúgást, a törölt webhookot és a törölt emojit a Discord nem engedi visszacsinálni, ezekről csak riasztás megy. Törölt rang visszaállításakor a tagjait kézzel kell visszaadni.
+- A megbízható rangokat a `settings.js` fájl `trustedRoles` sorában állíthatod (név vagy azonosító). Aki ezek valamelyikén vagy fölöttük van, megbízható. Ha `mode: 'limits'`-re állítod, a bot csak a határértékek fölött lép közbe, mint korábban.
 - **Botok és veszélyes jogok:** a nem megbízható ember által behívott botot kirúgja. Ha nem megbízható ember adminjogot ad egy rangnak, vagy veszélyes rangot oszt ki, a bot visszacsinálja, és megbünteti.
 
 **Parancsok:** `/security status`, `whitelist-add`, `whitelist-remove`, `raidmode` (be vagy ki), `lockdown` (minden szöveges csatorna zárolása, majd az eredeti állapot visszaállítása).

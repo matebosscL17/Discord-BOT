@@ -51,6 +51,13 @@ module.exports = {
 
     nuke: {
       enabled: true,
+      // 'strict': aki a megbízható rangok ALATT van (és minden idegen bot), az egyetlen szerverbeállítást
+      //           sem módosíthat. Minden ilyen lépést a bot azonnal visszacsinál, és megbünteti.
+      // 'limits': csak a lenti határértékek fölött lép közbe.
+      mode: 'strict',
+      // Ezek a rangok (név vagy azonosító) és minden fölöttük lévő rang megbízható.
+      // A nevekben a szóköz, emoji és kis-nagybetű nem számít.
+      trustedRoles: ['Founder', 'Ügyfélszolgálat'],
       // Ennyi másodpercen belül ennyi művelet egy embertől már támadásnak számít
       windowSeconds: 10,
       limits: {

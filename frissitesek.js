@@ -13,7 +13,7 @@ module.exports = [
     privatValtozasok: [
       '+ Raidvédelem: tömeges belépésnél raid mód, az új belépők némítása (kirúgás nélkül), riasztás a tulajnak',
       '+ Spamvédelem: üzenetáradat és tömeges pingelés esetén törlés és némítás',
-      '+ Anti-nuke: tömeges csatorna- és rangtörlés, ban, kick, webhook esetén minden rang elvétele és riasztás',
+      '+ Szigorú anti-nuke: a Founder és Ügyfélszolgálat rang alatt (és minden idegen botnál) semmilyen szervermódosítás nem engedélyezett, a bot azonnal visszacsinálja és büntet',
       '+ Nem engedélyezett botok kirúgása, veszélyes jogok és rangok automatikus visszavonása',
       '+ /security: állapot, megbízható lista, raid mód, zárolás',
       '! FONTOS: a bot rangja legyen a legfelső, a megbízható adminokat vedd fel a /security whitelist-add paranccsal',
@@ -26,7 +26,7 @@ module.exports = [
       privatValtozasok: [
         '+ Raid protection: raid mode on mass joins, new joiners timed out (no kicks), alert to the owner',
         '+ Spam protection: deletes and times out on message floods and mass mentions',
-        '+ Anti-nuke: removes all roles and alerts on mass channel/role deletion, bans, kicks or webhooks',
+        '+ Strict anti-nuke: below the Founder and Support roles (and for every other bot) no server change is allowed, the bot reverts it and punishes immediately',
         '+ Unapproved bots are kicked, dangerous permissions and roles are reverted automatically',
         '+ /security: status, trusted list, raid mode, lockdown',
         '! IMPORTANT: put the bot role at the top and add trusted admins with /security whitelist-add',

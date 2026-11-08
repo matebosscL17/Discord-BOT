@@ -23,7 +23,7 @@ const tr = translator({
     spam: '💬 Spamvédelem',
     spamInfo: '{messages} üzenet / {window} mp • {mentions}+ említés • {minutes} perc némítás',
     nuke: '💣 Anti-nuke',
-    nukeInfo: '{window} mp-es ablak • Büntetés: {punishment}',
+    nukeInfo: 'Mód: {mode} • Büntetés: {punishment}',
     raidMode: '🚨 Raid mód',
     raidModeOn: '🔴 AKTÍV (vége: {until})',
     raidModeOff: '🟢 Nincs',
@@ -68,6 +68,14 @@ const tr = translator({
     dangerousMember: 'Veszélyes rang adása <@{target}> tagnak: <@{user}>. A rangot a bot visszavette.',
     webhookDeleted: 'A webhookot a bot törölte.',
     lockdownAuto: 'A csatornák automatikusan zárolva.',
+    strictDetected: 'Tiltott művelet: <@{user}> → {action}.',
+    strictReverted: '↩️ A bot visszacsinálta.',
+    strictNotReverted: '⚠️ Ezt a Discord nem engedi visszacsinálni, nézd meg kézzel.',
+    strictRoleMembers: 'A rang újra létrejött, de a tagjait kézzel kell visszaadni.',
+    modeStrict: 'szigorú (a megbízható rangok alatt semmi nem engedélyezett)',
+    modeLimits: 'határértékek',
+    trustedRoles: '👑 Megbízható rangok',
+    trustedRolesMissing: '⚠️ A beállított megbízható rangok ({names}) nem találhatók a szerveren!',
     ownerDm: '🚨 Biztonsági riasztás a(z) **{guild}** szerveren:\n{text}',
   },
   en: {
@@ -82,7 +90,7 @@ const tr = translator({
     spam: '💬 Spam protection',
     spamInfo: '{messages} messages / {window} s • {mentions}+ mentions • {minutes} min timeout',
     nuke: '💣 Anti-nuke',
-    nukeInfo: '{window} s window • Punishment: {punishment}',
+    nukeInfo: 'Mode: {mode} • Punishment: {punishment}',
     raidMode: '🚨 Raid mode',
     raidModeOn: '🔴 ACTIVE (ends {until})',
     raidModeOff: '🟢 None',
@@ -126,6 +134,14 @@ const tr = translator({
     dangerousMember: 'Dangerous role given to <@{target}> by <@{user}>. The bot removed the role.',
     webhookDeleted: 'The bot deleted the webhook.',
     lockdownAuto: 'Channels were locked automatically.',
+    strictDetected: 'Forbidden action: <@{user}> → {action}.',
+    strictReverted: '↩️ The bot reverted it.',
+    strictNotReverted: '⚠️ Discord does not allow undoing this, check it manually.',
+    strictRoleMembers: 'The role was recreated, but its members must be given back manually.',
+    modeStrict: 'strict (nothing is allowed below the trusted roles)',
+    modeLimits: 'limits',
+    trustedRoles: '👑 Trusted roles',
+    trustedRolesMissing: '⚠️ The configured trusted roles ({names}) were not found on the server!',
     ownerDm: '🚨 Security alert on **{guild}**:\n{text}',
   },
 });
@@ -175,15 +191,33 @@ function trustedIds() {
   return new Set([...(security.whitelist ?? []), ...loadState().whitelist].map(String));
 }
 
-// Megbízható: a tulajdonos, maga a bot, a tulaj rangok és a megbízható lista (tagok vagy rangok).
+const normalizeName = (text) => String(text ?? '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
+// A megbízható rangok (settings.security.nuke.trustedRoles): név vagy azonosító alapján.
+function trustedRoleList(guild) {
+  const wanted = (nukeSettings.trustedRoles ?? []).map(String);
+  const names = wanted.map(normalizeName).filter(Boolean);
+  return [...(guild.roles?.cache?.values?.() ?? [])].filter((role) => wanted.includes(role.id)
+    || (names.length && names.includes(normalizeName(role.name))));
+}
+
+// Megbízható: a tulajdonos, maga a bot, a tulaj rangok, a megbízható lista (tagok vagy rangok),
+// valamint aki a megbízható rangok (pl. Founder, Ügyfélszolgálat) valamelyikén vagy fölötte van.
+// Idegen bot csak akkor megbízható, ha az azonosítója kifejezetten a megbízható listán van.
 function isTrusted(guild, userId, member) {
   if (!userId) return false;
   if (userId === guild.ownerId || userId === guild.client?.user?.id) return true;
   const trusted = trustedIds();
   if (trusted.has(userId)) return true;
+  if (member?.user?.bot) return false;
   const roles = member?.roles?.cache;
   if (!roles) return false;
-  return settings.ownerRoleIds.some((id) => roles.has(id)) || [...trusted].some((id) => roles.has(id));
+  if (settings.ownerRoleIds.some((id) => roles.has(id)) || [...trusted].some((id) => roles.has(id))) return true;
+  const trustedRoles = trustedRoleList(guild);
+  if (!trustedRoles.length) return false;
+  const lowest = Math.min(...trustedRoles.map((role) => role.position));
+  const highest = member.roles.highest?.position ?? Math.max(-1, ...[...roles.values()].map((role) => role.position ?? -1));
+  return highest >= lowest;
 }
 
 const isOwner = (interaction) => interaction.guild.ownerId === interaction.user.id
@@ -442,12 +476,300 @@ function permissionChange(entry) {
   return { old: BigInt(change.old ?? 0), new: BigInt(change.new ?? 0) };
 }
 
+
+// ===== Szigorú mód: a megbízható rangok alatt semmilyen szervermódosítás nem engedélyezett =====
+// A törölt csatornák és rangok adatai, hogy a bot újra tudja őket készíteni.
+const deletedChannels = new Map();
+const deletedRoles = new Map();
+const dmRecently = new Map();
+
+function remember(map, item) {
+  map.set(item.id, item);
+  if (map.size > 100) map.delete(map.keys().next().value);
+}
+
+async function onChannelDelete(channel) {
+  if (channel.guild?.id === config.guildId) remember(deletedChannels, channel);
+}
+
+async function onRoleDelete(role) {
+  if (role.guild?.id === config.guildId) remember(deletedRoles, role);
+}
+
+// A törlés eseménye és a naplóbejegyzés nem mindig ugyanabban a sorrendben érkezik, ezért vár egy kicsit.
+async function waitFor(map, id) {
+  for (let tries = 0; tries < 10 && !map.has(id); tries += 1) {
+    await new Promise((resolve) => { setTimeout(resolve, 200); });
+  }
+  return map.get(id);
+}
+
+const oldValue = (entry, key) => entry.changes?.find((change) => change.key === key)?.old;
+const hasChange = (entry, key) => entry.changes?.some((change) => change.key === key);
+
+// Egy csatorna jogosultság-felülírásának visszaállítása (vagy törlése, ha korábban nem volt).
+async function restoreOverwrite(channel, id, type, allow, deny) {
+  const list = [...channel.permissionOverwrites.cache.values()]
+    .filter((overwrite) => overwrite.id !== id)
+    .map((overwrite) => ({
+      id: overwrite.id, type: overwrite.type, allow: overwrite.allow.bitfield, deny: overwrite.deny.bitfield,
+    }));
+  if (allow !== null) list.push({ id, type, allow: BigInt(allow ?? 0), deny: BigInt(deny ?? 0) });
+  await channel.edit({ permissionOverwrites: list }, 'Anti-nuke: visszaállítás');
+}
+
+const REASON = 'Anti-nuke: szigorú mód';
+
+// Minden művelethez: a megnevezése és a visszacsinálása. A visszatérési érték: sikerült-e visszacsinálni.
+const STRICT_ACTIONS = {
+  [AuditLogEvent.ChannelCreate]: {
+    hu: 'csatorna létrehozása', en: 'channel created',
+    revert: async (entry, guild) => {
+      const channel = await guild.channels.fetch(entry.targetId).catch(() => null);
+      if (!channel) return false;
+      await channel.delete(REASON);
+      return true;
+    },
+  },
+  [AuditLogEvent.ChannelDelete]: {
+    hu: 'csatorna törlése', en: 'channel deleted',
+    revert: async (entry) => {
+      const channel = await waitFor(deletedChannels, entry.targetId);
+      if (!channel?.clone) return false;
+      await channel.clone({ reason: REASON });
+      deletedChannels.delete(entry.targetId);
+      return true;
+    },
+  },
+  [AuditLogEvent.ChannelUpdate]: {
+    hu: 'csatorna módosítása', en: 'channel edited',
+    revert: async (entry, guild) => {
+      const channel = await guild.channels.fetch(entry.targetId).catch(() => null);
+      if (!channel) return false;
+      const keys = {
+        name: 'name', topic: 'topic', nsfw: 'nsfw', rate_limit_per_user: 'rateLimitPerUser', bitrate: 'bitrate', user_limit: 'userLimit',
+      };
+      const edit = {};
+      for (const [key, option] of Object.entries(keys)) if (hasChange(entry, key)) edit[option] = oldValue(entry, key) ?? null;
+      if (!Object.keys(edit).length) return false;
+      await channel.edit(edit, REASON);
+      return true;
+    },
+  },
+  [AuditLogEvent.ChannelOverwriteCreate]: {
+    hu: 'csatornajog hozzáadása', en: 'channel permission added',
+    revert: async (entry, guild) => {
+      const channel = await guild.channels.fetch(entry.targetId).catch(() => null);
+      const id = entry.extra?.id;
+      if (!channel || !id) return false;
+      await restoreOverwrite(channel, id, null, null, null);
+      return true;
+    },
+  },
+  [AuditLogEvent.ChannelOverwriteUpdate]: {
+    hu: 'csatornajog módosítása', en: 'channel permission edited',
+    revert: async (entry, guild) => {
+      const channel = await guild.channels.fetch(entry.targetId).catch(() => null);
+      const id = entry.extra?.id;
+      if (!channel || !id) return false;
+      const current = channel.permissionOverwrites.cache.get(id);
+      const allow = hasChange(entry, 'allow') ? oldValue(entry, 'allow') : current?.allow.bitfield;
+      const deny = hasChange(entry, 'deny') ? oldValue(entry, 'deny') : current?.deny.bitfield;
+      await restoreOverwrite(channel, id, current?.type ?? (entry.extra?.user ? 1 : 0), allow ?? 0, deny ?? 0);
+      return true;
+    },
+  },
+  [AuditLogEvent.ChannelOverwriteDelete]: {
+    hu: 'csatornajog törlése', en: 'channel permission removed',
+    revert: async (entry, guild) => {
+      const channel = await guild.channels.fetch(entry.targetId).catch(() => null);
+      const id = entry.extra?.id ?? oldValue(entry, 'id');
+      if (!channel || !id) return false;
+      const type = oldValue(entry, 'type') ?? (entry.extra?.user ? 1 : 0);
+      await restoreOverwrite(channel, id, Number(type), oldValue(entry, 'allow') ?? 0, oldValue(entry, 'deny') ?? 0);
+      return true;
+    },
+  },
+  [AuditLogEvent.RoleCreate]: {
+    hu: 'rang létrehozása', en: 'role created',
+    revert: async (entry, guild) => {
+      const role = await guild.roles.fetch(entry.targetId).catch(() => null);
+      if (!role) return false;
+      await role.delete(REASON);
+      return true;
+    },
+  },
+  [AuditLogEvent.RoleDelete]: {
+    hu: 'rang törlése', en: 'role deleted',
+    note: 'strictRoleMembers',
+    revert: async (entry, guild) => {
+      const role = await waitFor(deletedRoles, entry.targetId);
+      const source = role ?? {
+        name: oldValue(entry, 'name'), color: oldValue(entry, 'color'), hoist: oldValue(entry, 'hoist'),
+        mentionable: oldValue(entry, 'mentionable'), permissions: oldValue(entry, 'permissions'),
+      };
+      if (!source.name) return false;
+      await guild.roles.create({
+        name: source.name,
+        color: source.color ?? undefined,
+        hoist: source.hoist ?? false,
+        mentionable: source.mentionable ?? false,
+        permissions: source.permissions?.bitfield ?? BigInt(source.permissions ?? 0),
+        position: source.position ?? undefined,
+        reason: REASON,
+      });
+      deletedRoles.delete(entry.targetId);
+      return true;
+    },
+  },
+  [AuditLogEvent.RoleUpdate]: {
+    hu: 'rang módosítása', en: 'role edited',
+    revert: async (entry, guild) => {
+      const role = guild.roles.cache.get(entry.targetId) ?? await guild.roles.fetch(entry.targetId).catch(() => null);
+      if (!role) return false;
+      const keys = {
+        name: 'name', color: 'color', hoist: 'hoist', mentionable: 'mentionable', permissions: 'permissions',
+      };
+      const edit = {};
+      for (const [key, option] of Object.entries(keys)) {
+        if (!hasChange(entry, key)) continue;
+        const value = oldValue(entry, key);
+        edit[option] = key === 'permissions' ? new PermissionsBitField(BigInt(value ?? 0)) : value;
+      }
+      if (!Object.keys(edit).length) return false;
+      await role.edit({ ...edit, reason: REASON });
+      return true;
+    },
+  },
+  [AuditLogEvent.MemberRoleUpdate]: {
+    hu: 'rang kiosztása vagy elvétele', en: 'role given or taken',
+    revert: async (entry, guild) => {
+      const target = await guild.members.fetch(entry.targetId).catch(() => null);
+      if (!target) return false;
+      const added = (entry.changes?.find((change) => change.key === '$add')?.new ?? []).map((item) => item.id);
+      const removed = (entry.changes?.find((change) => change.key === '$remove')?.new ?? []).map((item) => item.id);
+      if (added.length) await target.roles.remove(added, REASON);
+      if (removed.length) await target.roles.add(removed, REASON);
+      return added.length + removed.length > 0;
+    },
+  },
+  [AuditLogEvent.MemberUpdate]: {
+    hu: 'tag módosítása (név vagy némítás)', en: 'member edited (nickname or timeout)',
+    revert: async (entry, guild) => {
+      const target = await guild.members.fetch(entry.targetId).catch(() => null);
+      if (!target) return false;
+      let done = false;
+      if (hasChange(entry, 'nick')) {
+        await target.setNickname(oldValue(entry, 'nick') ?? null, REASON);
+        done = true;
+      }
+      if (hasChange(entry, 'communication_disabled_until')) {
+        await target.timeout(null, REASON);
+        done = true;
+      }
+      return done;
+    },
+  },
+  [AuditLogEvent.MemberBanAdd]: {
+    hu: 'kitiltás', en: 'ban',
+    revert: async (entry, guild) => {
+      await guild.bans.remove(entry.targetId, REASON);
+      return true;
+    },
+  },
+  [AuditLogEvent.MemberKick]: { hu: 'kirúgás', en: 'kick', revert: async () => false },
+  [AuditLogEvent.MemberPrune]: { hu: 'tagok tömeges eltávolítása', en: 'member prune', revert: async () => false },
+  [AuditLogEvent.BotAdd]: {
+    hu: 'bot behívása', en: 'bot added',
+    revert: async (entry, guild) => {
+      const bot = await guild.members.fetch(entry.targetId).catch(() => null);
+      if (!bot?.kickable) return false;
+      await bot.kick(REASON);
+      return true;
+    },
+  },
+  [AuditLogEvent.WebhookCreate]: {
+    hu: 'webhook létrehozása', en: 'webhook created',
+    revert: async (entry, guild) => {
+      const hooks = await guild.fetchWebhooks?.().catch(() => null);
+      const hook = hooks?.get?.(entry.targetId);
+      if (!hook) return false;
+      await hook.delete(REASON);
+      return true;
+    },
+  },
+  [AuditLogEvent.WebhookUpdate]: { hu: 'webhook módosítása', en: 'webhook edited', revert: async () => false },
+  [AuditLogEvent.WebhookDelete]: { hu: 'webhook törlése', en: 'webhook deleted', revert: async () => false },
+  [AuditLogEvent.GuildUpdate]: {
+    hu: 'szerverbeállítás módosítása', en: 'server settings changed',
+    revert: async (entry, guild) => {
+      const keys = {
+        name: 'name',
+        verification_level: 'verificationLevel',
+        explicit_content_filter: 'explicitContentFilter',
+        default_message_notifications: 'defaultMessageNotifications',
+        afk_timeout: 'afkTimeout',
+        afk_channel_id: 'afkChannel',
+        system_channel_id: 'systemChannel',
+        rules_channel_id: 'rulesChannel',
+      };
+      const edit = {};
+      for (const [key, option] of Object.entries(keys)) if (hasChange(entry, key)) edit[option] = oldValue(entry, key) ?? null;
+      if (!Object.keys(edit).length) return false;
+      await guild.edit({ ...edit, reason: REASON });
+      return true;
+    },
+  },
+  [AuditLogEvent.EmojiCreate]: {
+    hu: 'emoji feltöltése', en: 'emoji added',
+    revert: async (entry, guild) => {
+      const emoji = await guild.emojis?.fetch(entry.targetId).catch(() => null);
+      if (!emoji) return false;
+      await emoji.delete(REASON);
+      return true;
+    },
+  },
+  [AuditLogEvent.EmojiDelete]: { hu: 'emoji törlése', en: 'emoji deleted', revert: async () => false },
+  [AuditLogEvent.StickerDelete]: { hu: 'matrica törlése', en: 'sticker deleted', revert: async () => false },
+};
+
+async function strictAction(entry, guild, executorId) {
+  const action = STRICT_ACTIONS[entry.action];
+  if (!action) return;
+  const lang = settings.language === 'en' ? 'en' : 'hu';
+
+  let reverted = false;
+  try {
+    reverted = await action.revert(entry, guild);
+  } catch (error) {
+    console.error(`Anti-nuke visszaállítás hiba (${action.hu}):`, error.message);
+  }
+  const ok = await punish(guild, executorId, `${REASON}: ${action.hu}`);
+
+  const lines = [
+    tr.server('strictDetected', { user: executorId, action: action[lang] }),
+    tr.server(reverted ? 'strictReverted' : 'strictNotReverted'),
+  ];
+  if (reverted && action.note) lines.push(tr.server(action.note));
+  lines.push(ok ? tr.server('nukePunished', { punishment: punishmentName() }) : tr.server('nukeFailed'));
+
+  // Egy támadásnál sok bejegyzés jöhet: a tulaj percenként legfeljebb egy privát üzenetet kap ugyanarról az emberről.
+  const lastDm = dmRecently.get(executorId) ?? 0;
+  const ownerDm = Date.now() - lastDm > 60000;
+  if (ownerDm) dmRecently.set(executorId, Date.now());
+  await alert(guild, lines.join('\n'), { ownerDm });
+}
+
 async function onAuditLog(entry, guild) {
   if (!enabled(nukeSettings) || guild.id !== config.guildId) return;
   const executorId = entry.executorId;
   if (!executorId) return;
   const executor = await guild.members.fetch(executorId).catch(() => null);
   if (isTrusted(guild, executorId, executor)) return;
+  if (nukeSettings.mode === 'strict') {
+    await strictAction(entry, guild, executorId);
+    return;
+  }
 
   // Bot behívása nem megbízható embertől: a bot azonnal megy.
   if (entry.action === AuditLogEvent.BotAdd && nukeSettings.blockBots !== false) {
@@ -525,8 +847,13 @@ async function status(interaction) {
       {
         name: t('nuke'),
         value: `${enabled(nukeSettings) ? t('on') : t('off')}\n${t('nukeInfo', {
-          window: nukeSettings.windowSeconds ?? 10, punishment: punishText,
+          mode: t(nukeSettings.mode === 'strict' ? 'modeStrict' : 'modeLimits'), punishment: punishText,
         })}`,
+      },
+      {
+        name: t('trustedRoles'),
+        value: trustedRoleList(interaction.guild).map((role) => `<@&${role.id}>`).join(' ')
+          || t('trustedRolesMissing', { names: (nukeSettings.trustedRoles ?? []).join(', ') || '-' }),
       },
       {
         name: t('raidMode'),
@@ -630,6 +957,8 @@ module.exports = {
     [Events.GuildMemberAdd]: onJoin,
     [Events.MessageCreate]: onMessage,
     [Events.GuildAuditLogEntryCreate]: onAuditLog,
+    [Events.ChannelDelete]: onChannelDelete,
+    [Events.GuildRoleDelete]: onRoleDelete,
   },
   commands: [
     named(new SlashCommandBuilder(), ['security', 'Raid protection, anti-nuke and lockdown'],
@@ -655,6 +984,6 @@ module.exports = {
   handlers: { security: route },
   // tesztekhez
   _internal: {
-    isTrusted, hasDangerous, raidActive, stopRaidMode, lockChannels, unlockChannels, counters,
+    isTrusted, hasDangerous, raidActive, stopRaidMode, lockChannels, unlockChannels, counters, trustedRoleList, deletedChannels, deletedRoles, punishedRecently, dmRecently,
   },
 };
