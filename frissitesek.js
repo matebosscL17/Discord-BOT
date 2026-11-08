@@ -5,6 +5,19 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.9.1',
+    cim: 'Sapphire bot engedélyezve',
+    privatValtozasok: [
+      '! A Sapphire bot megbízható lett, a védelem nem lép közbe, amikor rangot ad az új tagoknak',
+    ],
+    en: {
+      cim: 'Sapphire bot allowed',
+      privatValtozasok: [
+        '! The Sapphire bot is now trusted, the protection does not step in when it gives roles to new members',
+      ],
+    },
+  },
+  {
     verzio: '2.9.0',
     cim: 'Erős szervervédelem',
     valtozasok: [

@@ -20,7 +20,9 @@ module.exports = {
     // Megbízható felhasználók és rangok azonosítói. Rájuk nem vonatkozik az anti-nuke és a spamvédelem.
     // A szerver tulajdonosa és a fenti ownerRoleIds rangok mindig megbízhatók.
     // A /security whitelist-add paranccsal Discordból is bővítheted.
-    whitelist: [],
+    whitelist: [
+      '678344927997853742', // Sapphire bot: ő adja a rangot az új tagoknak
+    ],
 
     raid: {
       enabled: true,
