@@ -4,6 +4,35 @@ const {
 } = require('discord.js');
 const settings = require('../settings');
 const { findChannel, userError } = require('./channels');
+const { translator } = require('./i18n');
+
+const tr = translator({
+  hu: {
+    notSet: 'Az ideiglenes hangszobák nincsenek beállítva. Szólj egy adminnak!',
+    panelTitle: '🎛️ Szoba kezelése',
+    panelBody: '**Tulajdonos:** <@{owner}>\nHa a tulajdonos kilép, bárki átveheti a szobát.',
+    rename: 'Átnevezés',
+    limit: 'Létszám',
+    unlock: 'Nyitás',
+    lock: 'Zárás',
+    claim: 'Átvétel',
+    kick: '🚫 Tag kirúgása a szobából',
+    allow: '✅ Tag beengedése a szobába',
+  },
+  en: {
+    notSet: 'Temporary voice rooms are not set up. Ask an admin!',
+    panelTitle: '🎛️ Room controls',
+    panelBody: '**Owner:** <@{owner}>\nIf the owner leaves, anyone can claim the room.',
+    rename: 'Rename',
+    limit: 'Limit',
+    unlock: 'Unlock',
+    lock: 'Lock',
+    claim: 'Claim',
+    kick: '🚫 Kick a member from the room',
+    allow: '✅ Let a member into the room',
+  },
+});
+
 
 const {
   categoryId, hubId, categoryName, categoryOldNames, hubName, emptyTimeoutMinutes,
@@ -73,23 +102,23 @@ async function deleteIfEmpty(channel) {
 }
 
 function roomPanel(ownerId, locked = false) {
-  const embed = new EmbedBuilder().setColor(settings.color).setTitle('🎛️ Szoba kezelése')
-    .setDescription(`**Tulajdonos:** <@${ownerId}>\nHa a tulajdonos kilép, bárki átveheti a szobát.`);
+  const embed = new EmbedBuilder().setColor(settings.color).setTitle(tr.server('panelTitle'))
+    .setDescription(tr.server('panelBody', { owner: ownerId }));
   const button = (id, label, emoji, style = ButtonStyle.Secondary) => new ButtonBuilder()
     .setCustomId(`vc:${id}:${ownerId}`).setLabel(label).setEmoji({ name: emoji }).setStyle(style);
   return {
     embeds: [embed],
     components: [
       new ActionRowBuilder().addComponents(
-        button('rename', 'Átnevezés', '✏️'),
-        button('limit', 'Létszám', '👥'),
-        button('lock', locked ? 'Nyitás' : 'Zárás', locked ? '🔓' : '🔒'),
-        button('claim', 'Átvétel', '👑', ButtonStyle.Success),
+        button('rename', tr.server('rename'), '✏️'),
+        button('limit', tr.server('limit'), '👥'),
+        button('lock', tr.server(locked ? 'unlock' : 'lock'), locked ? '🔓' : '🔒'),
+        button('claim', tr.server('claim'), '👑', ButtonStyle.Success),
       ),
       new ActionRowBuilder().addComponents(new UserSelectMenuBuilder()
-        .setCustomId(`vc:kick:${ownerId}`).setPlaceholder('🚫 Tag kirúgása a szobából')),
+        .setCustomId(`vc:kick:${ownerId}`).setPlaceholder(tr.server('kick'))),
       new ActionRowBuilder().addComponents(new UserSelectMenuBuilder()
-        .setCustomId(`vc:allow:${ownerId}`).setPlaceholder('✅ Tag beengedése a szobába')),
+        .setCustomId(`vc:allow:${ownerId}`).setPlaceholder(tr.server('allow'))),
     ],
     allowedMentions: { parse: [] },
   };
@@ -99,7 +128,7 @@ async function createRoom(guild, {
   name, ownerId, memberIds = [ownerId], isPrivate = false, userLimit = 0,
 }) {
   const setup = await ensureSetup(guild);
-  if (!setup) throw userError('Az ideiglenes hangszobák nincsenek beállítva. Szólj egy adminnak!');
+  if (!setup) throw userError(tr.lang('hu', 'notSet'), tr.lang('en', 'notSet'));
   const overwrites = [
     ...memberIds.map((id) => ({ id, allow: MEMBER_ACCESS })),
     { id: guild.client.user.id, allow: BOT_ACCESS },

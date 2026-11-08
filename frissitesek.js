@@ -2,7 +2,31 @@
 // Induláskor a bot a még ki nem tett verziókat beírja a Changelog csatornába.
 // A "valtozasok" a nyilvános Changelog csatornába, a "privatValtozasok" a logs csatornába kerül.
 // Bármelyik elhagyható. A sorok elején a + zöld, a - piros, a ! sárga ikon lesz.
+// Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
+  {
+    verzio: '2.6.0',
+    cim: 'Angol nyelv',
+    valtozasok: [
+      '+ A bot mostantól angolul is beszél: mindenkinek a saját Discord-nyelvén válaszol',
+      '+ A parancsok neve és leírása is magyar vagy angol, a Discord nyelvétől függően',
+    ],
+    privatValtozasok: [
+      '+ settings.js: language beállítás a közös üzenetek nyelvéhez (hu vagy en)',
+      '! A parancsok alapneve angol lett, magyar Discordon a megszokott magyar nevek látszanak',
+    ],
+    en: {
+      cim: 'English language',
+      valtozasok: [
+        "+ The bot now speaks English too: it replies in each member's own Discord language",
+        '+ Command names and descriptions are in Hungarian or English, based on your Discord language',
+      ],
+      privatValtozasok: [
+        '+ settings.js: language setting for shared messages (hu or en)',
+        '! Commands now have English base names, Hungarian Discord still shows the Hungarian names',
+      ],
+    },
+  },
   {
     verzio: '2.5.1',
     cim: 'Szebb ticketek',

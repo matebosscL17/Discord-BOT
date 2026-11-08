@@ -71,7 +71,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
     console.error(`Hiba itt: ${id}`, error);
-    const message = errorMessage(error);
+    const message = errorMessage(error, interaction.locale);
     const send = interaction.deferred || interaction.replied
       ? interaction.editReply(message)
       : interaction.reply({ content: message, flags: MessageFlags.Ephemeral });

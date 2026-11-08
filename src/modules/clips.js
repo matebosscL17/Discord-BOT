@@ -1,16 +1,55 @@
 const {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, MessageFlags,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, Events, MessageFlags,
   PermissionFlagsBits, SlashCommandBuilder,
 } = require('discord.js');
 const config = require('../config');
 const settings = require('../../settings');
-const { ChannelType } = require('discord.js');
 const { findChannel, userError } = require('../channels');
 const { ephemeral } = require('../utils');
+const {
+  choice, named, translator,
+} = require('../i18n');
+
+const tr = translator({
+  hu: {
+    notSet: 'A(z) klipek csatorna nincs beállítva. Szólj egy adminnak!',
+    badLink: 'Érvénytelen link. Elfogadott oldalak: {sites}',
+    wait: 'Következő klipet {minutes} perc múlva küldhetsz.',
+    card: '🎬 Klip',
+    sentBy: 'Beküldte: <@{user}>',
+    game: 'Játék: {game}',
+    vote: 'Szavazz a {emoji} reakcióval!',
+    delete: 'Törlés',
+    posted: 'Kikerült a klipfalra: {url}',
+    noDelete: 'Ezt csak a beküldője vagy a csapat törölheti.',
+    deleted: 'A klip törölve.',
+    winnerPrefix: 'A hét klipje • ',
+    winnerTitle: '🏆 A hét klipje: {title}',
+    winnerBody: 'Gratulálunk, <@{user}>! {emoji} {score} szavazat\n[Ugrás a kliphez]({url})',
+  },
+  en: {
+    notSet: 'The clips channel is not set up. Ask an admin!',
+    badLink: 'Invalid link. Accepted sites: {sites}',
+    wait: 'You can send your next clip in {minutes} minutes.',
+    card: '🎬 Clip',
+    sentBy: 'Sent by: <@{user}>',
+    game: 'Game: {game}',
+    vote: 'Vote with the {emoji} reaction!',
+    delete: 'Delete',
+    posted: 'Posted to the clip wall: {url}',
+    noDelete: 'Only the sender or the team can delete this.',
+    deleted: 'The clip was deleted.',
+    winnerPrefix: 'Clip of the week • ',
+    winnerTitle: '🏆 Clip of the week: {title}',
+    winnerBody: 'Congratulations, <@{user}>! {emoji} {score} votes\n[Go to the clip]({url})',
+  },
+});
+
+// Mindkét nyelvű kártyát és kihirdetést felismeri, így nyelvváltás után is jól számol.
+const CARD_LABELS = [tr.lang('hu', 'card'), tr.lang('en', 'card')];
+const WINNER_PREFIXES = [tr.lang('hu', 'winnerPrefix'), tr.lang('en', 'winnerPrefix')];
 
 const VOTE_EMOJI = '🔥';
-const CARD_LABEL = '🎬 Klip';
-const WINNER_PREFIX = 'A hét klipje • ';
 const WEEK_MS = 7 * 24 * 3600000;
 const HOUR_MS = 3600000;
 const SCAN_LIMIT = 1000;
@@ -20,7 +59,7 @@ async function clipsChannel(guild) {
   const channel = await findChannel(guild, 'clips', {
     id: settings.clips.channelId, name: settings.clips.channelName, type: ChannelType.GuildText,
   });
-  if (!channel) throw userError('A(z) klipek csatorna nincs beállítva. Szólj egy adminnak!');
+  if (!channel) throw userError(tr.lang('hu', 'notSet'), tr.lang('en', 'notSet'));
   return channel;
 }
 let lastCheckedWeek = null;
@@ -42,28 +81,28 @@ const canDelete = (interaction, authorId) => interaction.user.id === authorId
   || interaction.memberPermissions.has(PermissionFlagsBits.ManageMessages);
 
 async function submitClip(interaction) {
+  const t = tr.user(interaction);
   const url = parseClipUrl(interaction.options.getString('link', true));
   if (!url) {
-    return void (await interaction.reply(ephemeral(
-      `Érvénytelen link. Elfogadott oldalak: ${settings.clips.allowedDomains.join(', ')}`,
-    )));
+    return void (await interaction.reply(ephemeral(t('badLink', { sites: settings.clips.allowedDomains.join(', ') }))));
   }
 
   const waitMs = (cooldowns.get(interaction.user.id) ?? 0) + settings.clips.cooldownMinutes * 60000 - Date.now();
   if (waitMs > 0) {
-    return void (await interaction.reply(ephemeral(`Következő klipet ${Math.ceil(waitMs / 60000)} perc múlva küldhetsz.`)));
+    return void (await interaction.reply(ephemeral(t('wait', { minutes: Math.ceil(waitMs / 60000) }))));
   }
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   const channel = await clipsChannel(interaction.guild);
-  const game = interaction.options.getString('jatek');
+  const game = interaction.options.getString('game');
+  const sentBy = tr.server('sentBy', { user: interaction.user.id });
   const embed = new EmbedBuilder().setColor(settings.color)
-    .setAuthor({ name: CARD_LABEL })
-    .setTitle(interaction.options.getString('cim', true))
-    .setDescription(`Beküldte: <@${interaction.user.id}>${game ? `\nJáték: ${game}` : ''}`)
-    .setFooter({ text: `Szavazz a ${VOTE_EMOJI} reakcióval!` });
+    .setAuthor({ name: tr.server('card') })
+    .setTitle(interaction.options.getString('title', true))
+    .setDescription(game ? `${sentBy}\n${tr.server('game', { game })}` : sentBy)
+    .setFooter({ text: tr.server('vote', { emoji: VOTE_EMOJI }) });
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`clip:delete:${interaction.user.id}`).setLabel('Törlés')
+    new ButtonBuilder().setCustomId(`clip:delete:${interaction.user.id}`).setLabel(tr.server('delete'))
       .setEmoji({ name: '🗑️' }).setStyle(ButtonStyle.Secondary),
   );
 
@@ -72,15 +111,14 @@ async function submitClip(interaction) {
   });
   await message.react(VOTE_EMOJI);
   cooldowns.set(interaction.user.id, Date.now());
-  await interaction.editReply(`Kikerült a klipfalra: ${message.url}`);
+  await interaction.editReply(t('posted', { url: message.url }));
 }
 
 async function deleteClip(interaction, [authorId]) {
-  if (!canDelete(interaction, authorId)) {
-    return void (await interaction.reply(ephemeral('Ezt csak a beküldője vagy a csapat törölheti.')));
-  }
+  const t = tr.user(interaction);
+  if (!canDelete(interaction, authorId)) return void (await interaction.reply(ephemeral(t('noDelete'))));
   await interaction.message.delete();
-  await interaction.reply(ephemeral('A klip törölve.'));
+  await interaction.reply(ephemeral(t('deleted')));
 }
 
 // A legutóbbi hétfő 18:00 budapesti idő szerint.
@@ -135,12 +173,12 @@ async function announceWinner(client) {
   const own = messages.filter((message) => message.author.id === client.user.id);
 
   // Az üzenetekből derül ki, hogy kihirdetésre került-e már, így újraindításkor sem ismétel.
-  if (own.some((message) => message.embeds[0]?.footer?.text === `${WINNER_PREFIX}${week}`)) {
+  if (own.some((message) => WINNER_PREFIXES.some((prefix) => message.embeds[0]?.footer?.text === `${prefix}${week}`))) {
     lastCheckedWeek = week;
     return;
   }
 
-  const clips = own.filter((message) => message.embeds[0]?.author?.name === CARD_LABEL
+  const clips = own.filter((message) => CARD_LABELS.includes(message.embeds[0]?.author?.name)
     && message.createdTimestamp >= cutoff - WEEK_MS && message.createdTimestamp < cutoff);
   const top = clips.sort((a, b) => baseScore(b) - baseScore(a)).slice(0, 5);
   const scored = [];
@@ -152,9 +190,11 @@ async function announceWinner(client) {
 
   const authorId = clipAuthorId(winner.message);
   const embed = new EmbedBuilder().setColor(settings.warningColor)
-    .setTitle(`🏆 A hét klipje: ${winner.message.embeds[0].title}`.slice(0, 256))
-    .setDescription(`Gratulálunk, <@${authorId}>! ${VOTE_EMOJI} ${winner.score} szavazat\n[Ugrás a kliphez](${winner.message.url})`)
-    .setFooter({ text: `${WINNER_PREFIX}${week}` });
+    .setTitle(tr.server('winnerTitle', { title: winner.message.embeds[0].title }).slice(0, 256))
+    .setDescription(tr.server('winnerBody', {
+      user: authorId, emoji: VOTE_EMOJI, score: winner.score, url: winner.message.url,
+    }))
+    .setFooter({ text: `${tr.server('winnerPrefix')}${week}` });
   await channel.send({
     content: winner.message.content, embeds: [embed], allowedMentions: { users: authorId ? [authorId] : [] },
   });
@@ -163,7 +203,7 @@ async function announceWinner(client) {
 let warned = false;
 function startWeeklyCheck(client) {
   const check = () => announceWinner(client).catch((error) => {
-    if (error.userMessage && warned) return; // a hiányzó csatornát csak egyszer írja ki
+    if (error.userMessages && warned) return; // a hiányzó csatornát csak egyszer írja ki
     warned = true;
     console.error('Hét klipje hiba:', error.message);
   });
@@ -173,15 +213,15 @@ function startWeeklyCheck(client) {
 
 module.exports = {
   commands: [
-    new SlashCommandBuilder()
-      .setName('klip')
-      .setDescription('Klip beküldése a klipfalra')
-      .addStringOption((option) => option.setName('link').setDescription('A klip linkje').setRequired(true).setMaxLength(500))
-      .addStringOption((option) => option.setName('cim').setDescription('A klip címe').setRequired(true).setMaxLength(100))
-      .addStringOption((option) => option.setName('jatek').setDescription('Melyik játék?')
-        .addChoices(...settings.lfgGames.map((game) => ({ name: game.label, value: game.label })))),
+    named(new SlashCommandBuilder(), ['clip', 'Send a clip to the clip wall'], ['klip', 'Klip beküldése a klipfalra'])
+      .addStringOption((option) => named(option, ['link', 'Link to the clip'], ['link', 'A klip linkje'])
+        .setRequired(true).setMaxLength(500))
+      .addStringOption((option) => named(option, ['title', 'Title of the clip'], ['cim', 'A klip címe'])
+        .setRequired(true).setMaxLength(100))
+      .addStringOption((option) => named(option, ['game', 'Which game?'], ['jatek', 'Melyik játék?'])
+        .addChoices(...settings.lfgGames.map((game) => choice(game.label, game.labelEn ?? game.label, game.label)))),
   ],
-  handlers: { klip: submitClip, 'clip:delete': deleteClip },
+  handlers: { clip: submitClip, 'clip:delete': deleteClip },
   events: { [Events.ClientReady]: startWeeklyCheck },
   lastWeeklyCutoff,
   parseClipUrl,

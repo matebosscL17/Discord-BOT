@@ -5,6 +5,60 @@ const {
 const settings = require('../../settings');
 const { createRoom } = require('../voiceRooms');
 const { ephemeral, errorMessage } = require('../utils');
+const {
+  choice, named, pick, serverLang, translator,
+} = require('../i18n');
+
+const tr = translator({
+  hu: {
+    title: '{emoji} {game} csapatkeresés',
+    members: '**Tagok ({count}/{size})**',
+    expires: 'A kártya {hours} óra után lejár',
+    note: 'Megjegyzés',
+    status: 'Állapot',
+    join: 'Csatlakozás',
+    leave: 'Kilépés',
+    close: 'Lezárás',
+    needRole: 'Ehhez kell a(z) **{role}** rang.',
+    alreadyOpen: 'Már van nyitott kártyád. Előbb zárd le.',
+    expired: 'Ez a kártya már lejárt.',
+    gameGone: 'Ez a játék már nincs a listán.',
+    alreadyIn: 'Már a csapatban vagy.',
+    full: 'Ez a csapat már megtelt.',
+    roomName: '{emoji} • {game} csapat',
+    filled: '✅ Megtelt! Szoba: <#{room}>',
+    ready: '{members} kész a csapat, gyertek: <#{room}>',
+    hostLeave: 'Te vagy a szervező, használd a Lezárás gombot.',
+    notIn: 'Nem vagy a csapatban.',
+    hostOnly: 'Ezt csak a szervező zárhatja le.',
+    closed: '🔒 Lezárva',
+  },
+  en: {
+    title: '{emoji} {game} looking for group',
+    members: '**Members ({count}/{size})**',
+    expires: 'This card expires after {hours} hours',
+    note: 'Note',
+    status: 'Status',
+    join: 'Join',
+    leave: 'Leave',
+    close: 'Close',
+    needRole: 'You need the **{role}** role for this.',
+    alreadyOpen: 'You already have an open card. Close it first.',
+    expired: 'This card has expired.',
+    gameGone: 'This game is no longer on the list.',
+    alreadyIn: 'You are already in the group.',
+    full: 'This group is already full.',
+    roomName: '{emoji} • {game} group',
+    filled: '✅ Full! Room: <#{room}>',
+    ready: '{members} the group is ready, join here: <#{room}>',
+    hostLeave: 'You are the host, use the Close button.',
+    notIn: 'You are not in the group.',
+    hostOnly: 'Only the host can close this.',
+    closed: '🔒 Closed',
+  },
+});
+// A megjegyzés mezőt mindkét nyelven felismeri.
+const NOTE_NAMES = [tr.lang('hu', 'note'), tr.lang('en', 'note')];
 
 const EXPIRY_MS = settings.lfgExpiryHours * 3600000;
 const activeHosts = new Map(); // játékos -> a kártyája létrehozásának ideje
@@ -28,19 +82,19 @@ const membersOf = (embed) => [...(embed.description ?? '').matchAll(/<@(\d+)>/g)
 
 function card(game, size, hostId, memberIds, note, status) {
   const embed = new EmbedBuilder().setColor(status ? settings.successColor : settings.color)
-    .setTitle(`${game.emoji} ${game.label} csapatkeresés`)
-    .setDescription(`**Tagok (${memberIds.length}/${size})**\n${memberIds.map((id) => `<@${id}>`).join('\n')}`)
-    .setFooter({ text: `A kártya ${settings.lfgExpiryHours} óra után lejár` });
-  if (note) embed.addFields({ name: 'Megjegyzés', value: note });
-  if (status) embed.addFields({ name: 'Állapot', value: status });
+    .setTitle(tr.server('title', { emoji: game.emoji, game: pick(game, 'label', serverLang()) }))
+    .setDescription(`${tr.server('members', { count: memberIds.length, size })}\n${memberIds.map((id) => `<@${id}>`).join('\n')}`)
+    .setFooter({ text: tr.server('expires', { hours: settings.lfgExpiryHours }) });
+  if (note) embed.addFields({ name: tr.server('note'), value: note });
+  if (status) embed.addFields({ name: tr.server('status'), value: status });
 
   const args = `${game.id}:${size}:${hostId}`;
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`lfg:join:${args}`).setLabel('Csatlakozás').setEmoji({ name: '✅' })
+    new ButtonBuilder().setCustomId(`lfg:join:${args}`).setLabel(tr.server('join')).setEmoji({ name: '✅' })
       .setStyle(ButtonStyle.Success).setDisabled(Boolean(status)),
-    new ButtonBuilder().setCustomId(`lfg:leave:${args}`).setLabel('Kilépés').setEmoji({ name: '🚪' })
+    new ButtonBuilder().setCustomId(`lfg:leave:${args}`).setLabel(tr.server('leave')).setEmoji({ name: '🚪' })
       .setStyle(ButtonStyle.Secondary).setDisabled(Boolean(status)),
-    new ButtonBuilder().setCustomId(`lfg:close:${args}`).setLabel('Lezárás').setEmoji({ name: '🔒' })
+    new ButtonBuilder().setCustomId(`lfg:close:${args}`).setLabel(tr.server('close')).setEmoji({ name: '🔒' })
       .setStyle(ButtonStyle.Danger).setDisabled(Boolean(status)),
   );
   return { embeds: [embed], components: [row], allowedMentions: { parse: [] } };
@@ -48,19 +102,20 @@ function card(game, size, hostId, memberIds, note, status) {
 
 async function start(interaction) {
   const { user, guild, member } = interaction;
-  const game = gameById(interaction.options.getString('jatek', true));
-  const size = interaction.options.getInteger('letszam', true);
+  const t = tr.user(interaction);
+  const game = gameById(interaction.options.getString('game', true));
+  const size = interaction.options.getInteger('size', true);
   const role = findRole(guild, game);
 
   if (!hasGameRole(member, role)) {
-    return void (await interaction.reply(ephemeral(`Ehhez kell a(z) **${role.name}** rang.`)));
+    return void (await interaction.reply(ephemeral(tr.user(interaction)('needRole', { role: role.name }))));
   }
   if (Date.now() - (activeHosts.get(user.id) ?? 0) < EXPIRY_MS) {
-    return void (await interaction.reply(ephemeral('Már van nyitott kártyád. Előbb zárd le.')));
+    return void (await interaction.reply(ephemeral(t('alreadyOpen'))));
   }
 
   activeHosts.set(user.id, Date.now());
-  const note = interaction.options.getString('megjegyzes');
+  const note = interaction.options.getString('note');
   const ping = interaction.options.getBoolean('ping') && role;
   const payload = card(game, size, user.id, [user.id], note);
   try {
@@ -76,41 +131,43 @@ async function start(interaction) {
 }
 
 function noteOf(embed) {
-  return embed.fields?.find((field) => field.name === 'Megjegyzés')?.value;
+  return embed.fields?.find((field) => NOTE_NAMES.includes(field.name))?.value;
 }
 
 async function lobbyAction(interaction, action) {
   await interaction.deferUpdate();
-  const tell = (content) => interaction.followUp(ephemeral(content));
+  const t = tr.user(interaction);
+  // A tag nyelvén válaszol: tell('kulcs') vagy tell('kulcs', { ... })
+  const tell = (key, vars) => interaction.followUp(ephemeral(t(key, vars)));
   try {
     await withLock(interaction.message.id, async () => {
       const message = await interaction.channel.messages.fetch({ message: interaction.message.id, force: true });
       if (Date.now() - message.createdTimestamp > EXPIRY_MS) {
-        await tell('Ez a kártya már lejárt.');
+        await tell('expired');
         return;
       }
       await action(message, tell);
     });
   } catch (error) {
     console.error('Csapatkereső hiba:', error);
-    await tell(errorMessage(error)).catch(console.error);
+    await interaction.followUp(ephemeral(errorMessage(error, interaction.locale))).catch(console.error);
   }
 }
 
 async function join(interaction, [gameId, sizeText, hostId]) {
   const game = gameById(gameId);
-  if (!game) return void (await interaction.reply(ephemeral('Ez a játék már nincs a listán.')));
+  if (!game) return void (await interaction.reply(ephemeral(tr.user(interaction)('gameGone'))));
   const size = Number(sizeText);
   const role = findRole(interaction.guild, game);
   if (!hasGameRole(interaction.member, role)) {
-    return void (await interaction.reply(ephemeral(`Ehhez kell a(z) **${role.name}** rang.`)));
+    return void (await interaction.reply(ephemeral(tr.user(interaction)('needRole', { role: role.name }))));
   }
 
   await lobbyAction(interaction, async (message, tell) => {
     const [embed] = message.embeds;
     const members = membersOf(embed);
-    if (members.includes(interaction.user.id)) return void (await tell('Már a csapatban vagy.'));
-    if (members.length >= size) return void (await tell('Ez a csapat már megtelt.'));
+    if (members.includes(interaction.user.id)) return void (await tell('alreadyIn'));
+    if (members.length >= size) return void (await tell('full'));
 
     members.push(interaction.user.id);
     if (members.length < size) {
@@ -119,16 +176,16 @@ async function join(interaction, [gameId, sizeText, hostId]) {
     }
 
     const room = await createRoom(interaction.guild, {
-      name: `${game.emoji} • ${game.label} csapat`,
+      name: tr.server('roomName', { emoji: game.emoji, game: pick(game, 'label', serverLang()) }),
       ownerId: hostId,
       memberIds: members,
       isPrivate: true,
       userLimit: size,
     });
     activeHosts.delete(hostId);
-    await message.edit(card(game, size, hostId, members, noteOf(embed), `✅ Megtelt! Szoba: <#${room.id}>`));
+    await message.edit(card(game, size, hostId, members, noteOf(embed), tr.server('filled', { room: room.id })));
     await message.channel.send({
-      content: `${members.map((id) => `<@${id}>`).join(' ')} kész a csapat, gyertek: <#${room.id}>`,
+      content: tr.server('ready', { members: members.map((id) => `<@${id}>`).join(' '), room: room.id }),
       allowedMentions: { users: members },
     });
   });
@@ -136,12 +193,12 @@ async function join(interaction, [gameId, sizeText, hostId]) {
 
 async function leave(interaction, [gameId, sizeText, hostId]) {
   if (interaction.user.id === hostId) {
-    return void (await interaction.reply(ephemeral('Te vagy a szervező, használd a Lezárás gombot.')));
+    return void (await interaction.reply(ephemeral(tr.user(interaction)('hostLeave'))));
   }
   await lobbyAction(interaction, async (message, tell) => {
     const [embed] = message.embeds;
     const members = membersOf(embed);
-    if (!members.includes(interaction.user.id)) return void (await tell('Nem vagy a csapatban.'));
+    if (!members.includes(interaction.user.id)) return void (await tell('notIn'));
     const remaining = members.filter((id) => id !== interaction.user.id);
     await message.edit(card(gameById(gameId), Number(sizeText), hostId, remaining, noteOf(embed)));
   });
@@ -150,26 +207,26 @@ async function leave(interaction, [gameId, sizeText, hostId]) {
 async function close(interaction, [gameId, sizeText, hostId]) {
   const allowed = interaction.user.id === hostId
     || interaction.memberPermissions.has(PermissionFlagsBits.ManageMessages);
-  if (!allowed) return void (await interaction.reply(ephemeral('Ezt csak a szervező zárhatja le.')));
+  if (!allowed) return void (await interaction.reply(ephemeral(tr.user(interaction)('hostOnly'))));
 
   await lobbyAction(interaction, async (message) => {
     const [embed] = message.embeds;
     activeHosts.delete(hostId);
-    await message.edit(card(gameById(gameId), Number(sizeText), hostId, membersOf(embed), noteOf(embed), '🔒 Lezárva'));
+    await message.edit(card(gameById(gameId), Number(sizeText), hostId, membersOf(embed), noteOf(embed), tr.server('closed')));
   });
 }
 
 module.exports = {
   commands: [
-    new SlashCommandBuilder()
-      .setName('lfg')
-      .setDescription('Csapattársakat keres egy játékhoz')
-      .addStringOption((option) => option.setName('jatek').setDescription('Melyik játék?').setRequired(true)
-        .addChoices(...settings.lfgGames.map((game) => ({ name: game.label, value: game.id }))))
-      .addIntegerOption((option) => option.setName('letszam').setDescription('Hány fő legyen veled együtt? (2-10)')
+    named(new SlashCommandBuilder(), ['lfg', 'Find teammates for a game'], ['lfg', 'Csapattársakat keres egy játékhoz'])
+      .addStringOption((option) => named(option, ['game', 'Which game?'], ['jatek', 'Melyik játék?']).setRequired(true)
+        .addChoices(...settings.lfgGames.map((game) => choice(game.id, game.labelEn ?? game.label, game.label))))
+      .addIntegerOption((option) => named(option, ['size', 'Group size including you (2-10)'],
+        ['letszam', 'Hány fő legyen veled együtt? (2-10)'])
         .setRequired(true).setMinValue(2).setMaxValue(10))
-      .addStringOption((option) => option.setName('megjegyzes').setDescription('Pl. rang, időpont, játékmód').setMaxLength(200))
-      .addBooleanOption((option) => option.setName('ping').setDescription('Pingelje a játékrangot?')),
+      .addStringOption((option) => named(option, ['note', 'E.g. rank, time, game mode'], ['megjegyzes', 'Pl. rang, időpont, játékmód'])
+        .setMaxLength(200))
+      .addBooleanOption((option) => named(option, ['ping', 'Ping the game role?'], ['ping', 'Pingelje a játékrangot?'])),
   ],
   handlers: {
     lfg: start, 'lfg:join': join, 'lfg:leave': leave, 'lfg:close': close,

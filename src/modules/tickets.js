@@ -8,22 +8,177 @@ const settings = require('../../settings');
 const { ephemeral, sendLog } = require('../utils');
 const { buildTranscript } = require('../ticketTranscript');
 const { nextTicketNumber, record, summarize } = require('../ticketStats');
+const {
+  choice, langOf, named, pick, serverLang, translator,
+} = require('../i18n');
+
+const tr = translator({
+  hu: {
+    panelPosted: 'A ticket panel kikerült.',
+    alreadyOpen: 'Már van nyitott ticketed: <#{channel}>',
+    inProgress: 'A ticketed éppen készül.',
+    created: 'Elkészült a ticketed: <#{channel}>',
+    defaultQuestion: 'Miben segíthetünk?',
+    openedBy: 'Nyitotta',
+    welcome: 'Szia <@{user}>! Köszönjük, hogy írtál, a csapat hamarosan válaszol.\nAddig írd le ide a részleteket, vagy csatolj képet.',
+    fieldOpener: '👤 Nyitotta',
+    fieldType: '📂 Típus',
+    status: '📌 Állapot',
+    waiting: '🟢 Válaszra vár',
+    inWork: '🟡 Folyamatban\nÁtvette: <@{user}>',
+    claimedBy: 'Átvette',
+    footer: 'Ha megoldódott, zárd le a 🔒 gombbal',
+    claim: 'Átveszem',
+    claimed: 'Átvéve',
+    close: 'Lezárás',
+    logNew: '🎫 Új ticket {ticket}',
+    logNewBody: '**Nyitotta:** <@{user}>\n**Típus:** {type}\n**Csatorna:** <#{channel}>',
+    notTicket: 'Ez nem ticket csatorna.',
+    supportOnlyClaim: 'Csak a support csapat veheti át.',
+    claimNotice: '🙋 <@{owner}>, a ticketedet átvette <@{staff}>, hamarosan válaszol.',
+    cannotClose: 'Ezt a ticketet nem zárhatod le.',
+    closeTitle: 'Ticket lezárása',
+    reasonLabel: 'Indok (nem kötelező)',
+    closingAlready: 'A lezárás már folyamatban van.',
+    closedBy: '🔒 A ticketet lezárta: {name}. A csatorna 5 másodperc múlva törlődik.',
+    autoClosed: '🔒 A ticketet a bot lezárta, mert sokáig nem érkezett válasz. A csatorna 5 másodperc múlva törlődik.',
+    botInactive: 'a bot (inaktivitás)',
+    inactivityReason: '{hours} óra inaktivitás',
+    noReason: 'nincs megadva',
+    logClosed: '🔒 Ticket lezárva {ticket}',
+    logClosedBody: '**Nyitotta:** <@{owner}>\n**Átvette:** {claimer}\n**Lezárta:** {closer}\n**Időtartam:** {duration}\n**Indok:** {reason}',
+    dmClosed: 'A(z) {ticket} ticketed lezárva a(z) **{guild}** szerveren.',
+    dmReason: 'Indok: {reason}',
+    tType: 'Típus',
+    tOpener: 'Nyitotta',
+    tClaimer: 'Átvette',
+    tCloser: 'Lezárta',
+    tDuration: 'Időtartam',
+    tReason: 'Indok',
+    keepOpenDenied: 'Ezt csak a ticket nyitója vagy a csapat jelezheti.',
+    keptOpen: '✅ {name}: a ticket még aktuális, nyitva marad.',
+    reminderTitle: '⏰ Még aktuális ez a ticket?',
+    reminderBody: '{remind} órája nem írt ide senki. Ha {close} órán belül nem jön válasz, a bot lezárja a ticketet.',
+    reminderFooter: 'Inaktivitás figyelmeztetés',
+    stillNeeded: 'Igen, még kell',
+    useInTicket: 'Ezt egy ticket csatornában használd.',
+    supportOnly: 'Ez csak a support csapatnak érhető el.',
+    memberAdded: '<@{user}> bekerült a ticketbe.',
+    cannotRemoveOwner: 'A ticket nyitóját nem veheted ki.',
+    memberRemoved: '<@{user}> kikerült a ticketből.',
+    period7: 'Utolsó 7 nap',
+    period30: 'Utolsó 30 nap',
+    period0: 'Összes',
+    statsTitle: '📊 Ticket statisztika: {period}',
+    openNow: 'Nyitott most',
+    newTickets: 'Új ticketek',
+    closedCount: 'Lezárva',
+    closedValue: '{count} (ebből automatikusan: {auto})',
+    avgClaim: 'Átlagos átvételi idő',
+    avgClose: 'Átlagos megoldási idő',
+    categories: 'Kategóriák',
+    topClaims: 'Legtöbb átvétel',
+    topCloses: 'Legtöbb lezárás',
+    statsFooter: 'A statisztika a 2.5.0-s verzió óta gyűlik',
+    minutes: '{n} perc',
+    hours: '{h} óra {m} perc',
+    days: '{n} nap',
+  },
+  en: {
+    panelPosted: 'The ticket panel has been posted.',
+    alreadyOpen: 'You already have an open ticket: <#{channel}>',
+    inProgress: 'Your ticket is being created.',
+    created: 'Your ticket is ready: <#{channel}>',
+    defaultQuestion: 'How can we help?',
+    openedBy: 'Opened by',
+    welcome: 'Hi <@{user}>! Thanks for reaching out, the team will reply soon.\nMeanwhile, add any details here or attach a picture.',
+    fieldOpener: '👤 Opened by',
+    fieldType: '📂 Type',
+    status: '📌 Status',
+    waiting: '🟢 Waiting for reply',
+    inWork: '🟡 In progress\nClaimed by: <@{user}>',
+    claimedBy: 'Claimed by',
+    footer: 'When it is solved, close it with the 🔒 button',
+    claim: 'Claim',
+    claimed: 'Claimed',
+    close: 'Close',
+    logNew: '🎫 New ticket {ticket}',
+    logNewBody: '**Opened by:** <@{user}>\n**Type:** {type}\n**Channel:** <#{channel}>',
+    notTicket: 'This is not a ticket channel.',
+    supportOnlyClaim: 'Only the support team can claim tickets.',
+    claimNotice: '🙋 <@{owner}>, your ticket was claimed by <@{staff}>, they will reply soon.',
+    cannotClose: 'You cannot close this ticket.',
+    closeTitle: 'Close ticket',
+    reasonLabel: 'Reason (optional)',
+    closingAlready: 'The ticket is already being closed.',
+    closedBy: '🔒 Ticket closed by {name}. This channel will be deleted in 5 seconds.',
+    autoClosed: '🔒 The bot closed this ticket because there was no reply for a long time. This channel will be deleted in 5 seconds.',
+    botInactive: 'the bot (inactivity)',
+    inactivityReason: '{hours} hours of inactivity',
+    noReason: 'not given',
+    logClosed: '🔒 Ticket closed {ticket}',
+    logClosedBody: '**Opened by:** <@{owner}>\n**Claimed by:** {claimer}\n**Closed by:** {closer}\n**Duration:** {duration}\n**Reason:** {reason}',
+    dmClosed: 'Your ticket {ticket} on **{guild}** was closed.',
+    dmReason: 'Reason: {reason}',
+    tType: 'Type',
+    tOpener: 'Opened by',
+    tClaimer: 'Claimed by',
+    tCloser: 'Closed by',
+    tDuration: 'Duration',
+    tReason: 'Reason',
+    keepOpenDenied: 'Only the ticket owner or the team can do this.',
+    keptOpen: '✅ {name}: this ticket is still needed, it stays open.',
+    reminderTitle: '⏰ Is this ticket still needed?',
+    reminderBody: 'Nobody has written here for {remind} hours. If there is no reply within {close} hours, the bot will close the ticket.',
+    reminderFooter: 'Inactivity reminder',
+    stillNeeded: 'Yes, still needed',
+    useInTicket: 'Use this in a ticket channel.',
+    supportOnly: 'This is only available to the support team.',
+    memberAdded: '<@{user}> was added to the ticket.',
+    cannotRemoveOwner: 'You cannot remove the ticket owner.',
+    memberRemoved: '<@{user}> was removed from the ticket.',
+    period7: 'Last 7 days',
+    period30: 'Last 30 days',
+    period0: 'All time',
+    statsTitle: '📊 Ticket statistics: {period}',
+    openNow: 'Open now',
+    newTickets: 'New tickets',
+    closedCount: 'Closed',
+    closedValue: '{count} (automatically: {auto})',
+    avgClaim: 'Average time to claim',
+    avgClose: 'Average time to solve',
+    categories: 'Categories',
+    topClaims: 'Most claims',
+    topCloses: 'Most closes',
+    statsFooter: 'Statistics are collected since version 2.5.0',
+    minutes: '{n} min',
+    hours: '{h} h {m} min',
+    days: '{n} days',
+  },
+});
+
+// Mindkét nyelvű szöveget felismeri, így nyelvváltás után a régi ticketek is működnek.
+const both = (key) => [tr.lang('hu', key), tr.lang('en', key)];
+const STATUS_FIELDS = both('status');
+const CLAIMED_FIELDS = both('claimedBy');
+const REMINDER_FOOTERS = both('reminderFooter');
 
 // A ticket adatai a csatorna leírásában vannak, olvasható formában:
-// "Ticket #0001 • Hibajelentés • Nyitotta: név (ID: 123)"
+// "Ticket #0001 • Hibajelentés • Nyitotta: név (ID: 123)" vagy angolul "... • Opened by: név (ID: 123)"
 // A régebbi verziók "ticket-owner:<tag>|n:<sorszám>|cat:<kategória>" formát használtak, az is működik.
 const TOPIC_PREFIX = 'ticket-owner:';
-const STATUS_FIELD = '📌 Állapot';
-const REMINDER_FOOTER = 'Inaktivitás figyelmeztetés';
+const TOPIC_PATTERN = /^Ticket #(\d+) • (.+?) • (?:Nyitotta|Opened by): .* \(ID: (\d+)\)$/;
 const CHECK_INTERVAL_MS = 30 * 60000;
 const HOUR_MS = 3600000;
 const MEMBER_ACCESS = [
   PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
   PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles,
 ];
-const DEFAULT_QUESTIONS = [{ label: 'Miben segíthetünk?', long: true }];
+const DEFAULT_QUESTIONS = [{ label: tr.lang('hu', 'defaultQuestion'), labelEn: tr.lang('en', 'defaultQuestion'), long: true }];
 const openingTickets = new Set(); // dupla kattintás ellen
 const closingChannels = new Set();
+
+const pad = (number) => String(number).padStart(4, '0');
 
 function ticketInfo(channel) {
   const topic = channel?.topic;
@@ -33,71 +188,77 @@ function ticketInfo(channel) {
     const meta = Object.fromEntries(parts.map((part) => part.split(':')));
     return { ownerId: owner, number: meta.n ? Number(meta.n) : null, categoryId: meta.cat ?? null };
   }
-  const match = topic.match(/^Ticket #(\d+) • (.+?) • Nyitotta: .* \(ID: (\d+)\)$/);
+  const match = topic.match(TOPIC_PATTERN);
   if (!match) return null;
-  const category = settings.ticketCategories.find((item) => item.label === match[2]);
+  const category = settings.ticketCategories.find((item) => item.label === match[2] || item.labelEn === match[2]);
   return { ownerId: match[3], number: Number(match[1]), categoryId: category?.id ?? null };
 }
 
-const topicFor = (number, category, user) => `Ticket #${pad(number)} • ${category.label} • `
-  + `Nyitotta: ${user.username} (ID: ${user.id})`;
-const pad = (number) => String(number).padStart(4, '0');
+const topicFor = (number, category, user) => `Ticket #${pad(number)} • ${pick(category, 'label', serverLang())} • `
+  + `${tr.server('openedBy')}: ${user.username} (ID: ${user.id})`;
 const ownerOf = (channel) => ticketInfo(channel)?.ownerId ?? null;
 const findOpenTicket = (guild, userId) => guild.channels.cache.find((channel) => ownerOf(channel) === userId);
 const categoryById = (id) => settings.ticketCategories.find((category) => category.id === id)
   ?? { id: 'ticket', label: 'Ticket', emoji: '🎫' };
+const categoryLabel = (category, lang = serverLang()) => pick(category, 'label', lang);
 const questionsOf = (category) => (category.questions?.length ? category.questions : DEFAULT_QUESTIONS).slice(0, 5);
 const ticketLabel = (info) => (info?.number ? `#${pad(info.number)}` : 'ticket');
 
 const isSupport = (interaction) => interaction.member.roles.cache.has(config.supportRoleId)
   || interaction.memberPermissions.has(PermissionFlagsBits.ManageChannels);
 
-function formatDuration(ms) {
+function formatDuration(ms, lang = serverLang()) {
   if (!ms) return '-';
   const minutes = Math.round(ms / 60000);
-  if (minutes < 60) return `${minutes} perc`;
+  if (minutes < 60) return tr.lang(lang, 'minutes', { n: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 48) return `${hours} óra ${minutes % 60} perc`;
-  return `${Math.round(hours / 24)} nap`;
+  if (hours < 48) return tr.lang(lang, 'hours', { h: hours, m: minutes % 60 });
+  return tr.lang(lang, 'days', { n: Math.round(hours / 24) });
 }
 
 function ticketButtons(claimed = false) {
   return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('ticket:claim').setLabel(claimed ? 'Átvéve' : 'Átveszem')
+    new ButtonBuilder().setCustomId('ticket:claim').setLabel(tr.server(claimed ? 'claimed' : 'claim'))
       .setEmoji({ name: '🙋' }).setStyle(ButtonStyle.Success).setDisabled(claimed),
-    new ButtonBuilder().setCustomId('ticket:close').setLabel('Lezárás').setEmoji({ name: '🔒' }).setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('ticket:close').setLabel(tr.server('close'))
+      .setEmoji({ name: '🔒' }).setStyle(ButtonStyle.Danger),
   );
 }
 
 async function postPanel(interaction) {
+  const lang = serverLang();
   const embed = new EmbedBuilder().setColor(settings.color)
-    .setTitle(settings.ticketPanel.title).setDescription(settings.ticketPanel.description);
+    .setTitle(pick(settings.ticketPanel, 'title', lang))
+    .setDescription(pick(settings.ticketPanel, 'description', lang));
   const row = new ActionRowBuilder().addComponents(settings.ticketCategories.slice(0, 5).map((category) => (
-    new ButtonBuilder().setCustomId(`ticket:open:${category.id}`).setLabel(category.label)
+    new ButtonBuilder().setCustomId(`ticket:open:${category.id}`).setLabel(categoryLabel(category, lang))
       .setEmoji({ name: category.emoji }).setStyle(ButtonStyle.Secondary)
   )));
   await interaction.channel.send({ embeds: [embed], components: [row] });
-  await interaction.reply(ephemeral('A ticket panel kikerült.'));
+  await interaction.reply(ephemeral(tr.user(interaction)('panelPosted')));
 }
 
+// A kérdéseket a tag a saját nyelvén látja.
 async function showOpenModal(interaction, [categoryId]) {
+  const t = tr.user(interaction);
+  const lang = langOf(interaction.locale);
   const existing = findOpenTicket(interaction.guild, interaction.user.id);
   if (existing) {
-    await interaction.reply(ephemeral(`Már van nyitott ticketed: <#${existing.id}>`));
+    await interaction.reply(ephemeral(t('alreadyOpen', { channel: existing.id })));
     return;
   }
   const category = categoryById(categoryId);
   const rows = questionsOf(category).map((question, index) => new ActionRowBuilder().addComponents(
     new TextInputBuilder()
       .setCustomId(`q${index}`)
-      .setLabel(question.label.slice(0, 45))
+      .setLabel(pick(question, 'label', lang).slice(0, 45))
       .setStyle(question.long ? TextInputStyle.Paragraph : TextInputStyle.Short)
       .setRequired(!question.optional)
       .setMaxLength(question.long ? 1000 : 200),
   ));
   await interaction.showModal(new ModalBuilder()
     .setCustomId(`ticket:modal:${category.id}`)
-    .setTitle(category.label.slice(0, 45))
+    .setTitle(categoryLabel(category, lang).slice(0, 45))
     .addComponents(rows));
 }
 
@@ -114,12 +275,13 @@ const highestOpenNumber = (guild) => Math.max(0, ...guild.channels.cache
   .map((channel) => ticketInfo(channel)?.number ?? 0));
 
 async function createTicket(interaction, [categoryId]) {
+  const t = tr.user(interaction);
   const { guild, user } = interaction;
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const existing = findOpenTicket(guild, user.id);
   if (existing || openingTickets.has(user.id)) {
-    await interaction.editReply(existing ? `Már van nyitott ticketed: <#${existing.id}>` : 'A ticketed éppen készül.');
+    await interaction.editReply(existing ? t('alreadyOpen', { channel: existing.id }) : t('inProgress'));
     return;
   }
 
@@ -143,25 +305,26 @@ async function createTicket(interaction, [categoryId]) {
       ],
     });
 
+    // A ticket közös üzenet, ezért a szerver nyelvén jelenik meg.
+    const lang = serverLang();
     const embed = new EmbedBuilder().setColor(settings.color)
-      .setAuthor({ name: `${category.emoji} ${category.label}` })
+      .setAuthor({ name: `${category.emoji} ${categoryLabel(category, lang)}` })
       .setTitle(`Ticket #${pad(number)}`)
-      .setDescription(`Szia <@${user.id}>! Köszönjük, hogy írtál, a csapat hamarosan válaszol.\n`
-        + 'Addig írd le ide a részleteket, vagy csatolj képet.')
+      .setDescription(tr.server('welcome', { user: user.id }))
       .setThumbnail(user.displayAvatarURL())
       .addFields(
-        { name: '👤 Nyitotta', value: `<@${user.id}>`, inline: true },
-        { name: '📂 Típus', value: category.label, inline: true },
-        { name: STATUS_FIELD, value: '🟢 Válaszra vár', inline: true },
+        { name: tr.server('fieldOpener'), value: `<@${user.id}>`, inline: true },
+        { name: tr.server('fieldType'), value: categoryLabel(category, lang), inline: true },
+        { name: tr.server('status'), value: tr.server('waiting'), inline: true },
       )
-      .setFooter({ text: 'Ha megoldódott, zárd le a 🔒 gombbal' })
+      .setFooter({ text: tr.server('footer') })
       .setTimestamp();
     // A régi panel gombjai még "reason" mezőt küldhetnek.
     const legacy = readAnswer(interaction, 'reason');
-    if (legacy) embed.addFields({ name: '❔ Miben segíthetünk?', value: legacy.slice(0, 1024) });
+    if (legacy) embed.addFields({ name: `❔ ${tr.server('defaultQuestion')}`, value: legacy.slice(0, 1024) });
     questionsOf(category).forEach((question, index) => {
       const answer = readAnswer(interaction, `q${index}`);
-      if (answer) embed.addFields({ name: `❔ ${question.label}`, value: answer.slice(0, 1024) });
+      if (answer) embed.addFields({ name: `❔ ${pick(question, 'label', lang)}`, value: answer.slice(0, 1024) });
     });
 
     await channel.send({
@@ -170,13 +333,13 @@ async function createTicket(interaction, [categoryId]) {
       components: [ticketButtons()],
       allowedMentions: { users: [user.id], roles: [config.supportRoleId] },
     });
-    await interaction.editReply(`Elkészült a ticketed: <#${channel.id}>`);
+    await interaction.editReply(t('created', { channel: channel.id }));
     record({
       type: 'open', ticket: number, category: category.id, userId: user.id,
     });
     await sendLog(guild, {
-      title: `🎫 Új ticket #${pad(number)}`,
-      description: `**Nyitotta:** <@${user.id}>\n**Típus:** ${category.label}\n**Csatorna:** <#${channel.id}>`,
+      title: tr.server('logNew', { ticket: `#${pad(number)}` }),
+      description: tr.server('logNewBody', { user: user.id, type: categoryLabel(category, lang), channel: channel.id }),
     });
   } finally {
     openingTickets.delete(user.id);
@@ -184,22 +347,23 @@ async function createTicket(interaction, [categoryId]) {
 }
 
 async function claimTicket(interaction) {
+  const t = tr.user(interaction);
   const info = ticketInfo(interaction.channel);
-  if (!info) return void (await interaction.reply(ephemeral('Ez nem ticket csatorna.')));
-  if (!isSupport(interaction)) return void (await interaction.reply(ephemeral('Csak a support csapat veheti át.')));
+  if (!info) return void (await interaction.reply(ephemeral(t('notTicket'))));
+  if (!isSupport(interaction)) return void (await interaction.reply(ephemeral(t('supportOnlyClaim'))));
 
   const original = interaction.message.embeds[0];
-  const status = `🟡 Folyamatban\nÁtvette: <@${interaction.user.id}>`;
+  const status = tr.server('inWork', { user: interaction.user.id });
   const embed = EmbedBuilder.from(original);
   const fields = Array.isArray(original?.fields) ? original.fields : [];
-  if (fields.some((field) => field.name === STATUS_FIELD)) {
-    embed.setFields(fields.map((field) => (field.name === STATUS_FIELD ? { ...field, value: status } : field)));
+  if (fields.some((field) => STATUS_FIELDS.includes(field.name))) {
+    embed.setFields(fields.map((field) => (STATUS_FIELDS.includes(field.name) ? { ...field, value: status } : field)));
   } else {
-    embed.addFields({ name: 'Átvette', value: `<@${interaction.user.id}>` }); // régi ticket
+    embed.addFields({ name: tr.server('claimedBy'), value: `<@${interaction.user.id}>` }); // régi ticket
   }
   await interaction.update({ embeds: [embed], components: [ticketButtons(true)] });
   await interaction.channel.send({
-    content: `🙋 <@${info.ownerId}>, a ticketedet átvette <@${interaction.user.id}>, hamarosan válaszol.`,
+    content: tr.server('claimNotice', { owner: info.ownerId, staff: interaction.user.id }),
     allowedMentions: { users: [info.ownerId] },
   });
   record({
@@ -211,21 +375,23 @@ async function claimTicket(interaction) {
 const canClose = (interaction, ownerId) => interaction.user.id === ownerId || isSupport(interaction);
 
 async function showCloseModal(interaction) {
+  const t = tr.user(interaction);
   const ownerId = ownerOf(interaction.channel);
-  if (!ownerId) return void (await interaction.reply(ephemeral('Ez nem ticket csatorna.')));
-  if (!canClose(interaction, ownerId)) return void (await interaction.reply(ephemeral('Ezt a ticketet nem zárhatod le.')));
+  if (!ownerId) return void (await interaction.reply(ephemeral(t('notTicket'))));
+  if (!canClose(interaction, ownerId)) return void (await interaction.reply(ephemeral(t('cannotClose'))));
 
   await interaction.showModal(new ModalBuilder()
     .setCustomId('ticket:close-modal')
-    .setTitle('Ticket lezárása')
+    .setTitle(t('closeTitle'))
     .addComponents(new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('reason').setLabel('Indok (nem kötelező)')
+      new TextInputBuilder().setCustomId('reason').setLabel(t('reasonLabel'))
         .setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(300),
     )));
 }
 
 function claimedBy(message) {
-  const field = message?.embeds[0]?.fields?.find((item) => item.name === 'Átvette' || item.name === STATUS_FIELD);
+  const field = message?.embeds[0]?.fields
+    ?.find((item) => CLAIMED_FIELDS.includes(item.name) || STATUS_FIELDS.includes(item.name));
   return field?.value?.match(/<@!?(\d+)>/)?.[1];
 }
 
@@ -234,22 +400,22 @@ async function finishClose(channel, { closedById, reason, auto = false }) {
   const { guild, client } = channel;
   const info = ticketInfo(channel);
   const category = categoryById(info.categoryId);
-  const pinned = await channel.messages.fetch({ limit: 1, after: '0' }).catch(() => null);
-  const claimerId = claimedBy(pinned?.first());
+  const first = await channel.messages.fetch({ limit: 1, after: '0' }).catch(() => null);
+  const claimerId = claimedBy(first?.first());
   const durationMs = Date.now() - channel.createdTimestamp;
-  const closedBy = auto ? 'a bot (inaktivitás)' : `<@${closedById}>`;
+  const nameOf = (id) => guild.members.cache.get(id)?.user.username ?? id;
 
   const files = [];
   if (config.transcriptEnabled && config.logChannelId) {
     try {
       files.push(await buildTranscript(channel, {
         Ticket: ticketLabel(info),
-        Típus: category.label,
-        Nyitotta: guild.members.cache.get(info.ownerId)?.user.username ?? info.ownerId,
-        Átvette: claimerId ? (guild.members.cache.get(claimerId)?.user.username ?? claimerId) : '-',
-        Lezárta: auto ? 'bot (inaktivitás)' : (guild.members.cache.get(closedById)?.user.username ?? closedById),
-        Időtartam: formatDuration(durationMs),
-        Indok: reason || '-',
+        [tr.server('tType')]: categoryLabel(category),
+        [tr.server('tOpener')]: nameOf(info.ownerId),
+        [tr.server('tClaimer')]: claimerId ? nameOf(claimerId) : '-',
+        [tr.server('tCloser')]: auto ? tr.server('botInactive') : nameOf(closedById),
+        [tr.server('tDuration')]: formatDuration(durationMs),
+        [tr.server('tReason')]: reason || '-',
       }));
     } catch (error) {
       console.error('Nem sikerült menteni a ticketet:', error.message);
@@ -261,16 +427,22 @@ async function finishClose(channel, { closedById, reason, auto = false }) {
     byOwner: !auto && closedById === info.ownerId, auto, durationMs,
   });
   await sendLog(guild, {
-    title: `🔒 Ticket lezárva ${ticketLabel(info)}`,
-    description: `**Nyitotta:** <@${info.ownerId}>\n**Átvette:** ${claimerId ? `<@${claimerId}>` : '-'}\n`
-      + `**Lezárta:** ${closedBy}\n**Időtartam:** ${formatDuration(durationMs)}\n**Indok:** ${reason || 'nincs megadva'}`,
+    title: tr.server('logClosed', { ticket: ticketLabel(info) }),
+    description: tr.server('logClosedBody', {
+      owner: info.ownerId,
+      claimer: claimerId ? `<@${claimerId}>` : '-',
+      closer: auto ? tr.server('botInactive') : `<@${closedById}>`,
+      duration: formatDuration(durationMs),
+      reason: reason || tr.server('noReason'),
+    }),
     color: settings.errorColor,
     files,
   });
-  await client.users.send(info.ownerId, {
-    content: `A(z) ${ticketLabel(info)} ticketed lezárva a(z) **${guild.name}** szerveren.${reason ? `\nIndok: ${reason}` : ''}`,
-    allowedMentions: { parse: [] },
-  }).catch(() => {}); // Sokaknál tiltva van a privát üzenet, ez nem hiba.
+
+  const dm = [tr.server('dmClosed', { ticket: ticketLabel(info), guild: guild.name })];
+  if (reason) dm.push(tr.server('dmReason', { reason }));
+  await client.users.send(info.ownerId, { content: dm.join('\n'), allowedMentions: { parse: [] } })
+    .catch(() => {}); // Sokaknál tiltva van a privát üzenet, ez nem hiba.
 
   setTimeout(() => {
     channel.delete().catch(console.error).finally(() => closingChannels.delete(channel.id));
@@ -278,16 +450,17 @@ async function finishClose(channel, { closedById, reason, auto = false }) {
 }
 
 async function closeTicket(interaction) {
+  const t = tr.user(interaction);
   const { channel, user } = interaction;
   const ownerId = ownerOf(channel);
-  if (!ownerId) return void (await interaction.reply(ephemeral('Ez nem ticket csatorna.')));
-  if (!canClose(interaction, ownerId)) return void (await interaction.reply(ephemeral('Ezt a ticketet nem zárhatod le.')));
-  if (closingChannels.has(channel.id)) return void (await interaction.reply(ephemeral('A lezárás már folyamatban van.')));
+  if (!ownerId) return void (await interaction.reply(ephemeral(t('notTicket'))));
+  if (!canClose(interaction, ownerId)) return void (await interaction.reply(ephemeral(t('cannotClose'))));
+  if (closingChannels.has(channel.id)) return void (await interaction.reply(ephemeral(t('closingAlready'))));
 
   closingChannels.add(channel.id);
   try {
     const reason = interaction.isModalSubmit?.() ? readAnswer(interaction, 'reason') : '';
-    await interaction.reply(`🔒 A ticketet lezárta: ${user.username}. A csatorna 5 másodperc múlva törlődik.`);
+    await interaction.reply(tr.server('closedBy', { name: user.username }));
     await finishClose(channel, { closedById: user.id, reason });
   } catch (error) {
     closingChannels.delete(channel.id);
@@ -296,11 +469,14 @@ async function closeTicket(interaction) {
 }
 
 async function keepOpen(interaction) {
+  const t = tr.user(interaction);
   const ownerId = ownerOf(interaction.channel);
-  if (!ownerId) return void (await interaction.reply(ephemeral('Ez nem ticket csatorna.')));
-  if (!canClose(interaction, ownerId)) return void (await interaction.reply(ephemeral('Ezt csak a ticket nyitója vagy a csapat jelezheti.')));
+  if (!ownerId) return void (await interaction.reply(ephemeral(t('notTicket'))));
+  if (!canClose(interaction, ownerId)) return void (await interaction.reply(ephemeral(t('keepOpenDenied'))));
   await interaction.update({ components: [] });
-  await interaction.channel.send({ content: `✅ ${interaction.user.username}: a ticket még aktuális, nyitva marad.`, allowedMentions: { parse: [] } });
+  await interaction.channel.send({
+    content: tr.server('keptOpen', { name: interaction.user.username }), allowedMentions: { parse: [] },
+  });
 }
 
 async function checkInactive(channel) {
@@ -310,25 +486,25 @@ async function checkInactive(channel) {
   const silentMs = Date.now() - (last?.createdTimestamp ?? channel.createdTimestamp);
   const { remindHours, closeHours } = settings.ticketInactivity;
   const isReminder = last?.author.id === channel.client.user.id
-    && last.embeds[0]?.footer?.text === REMINDER_FOOTER;
+    && REMINDER_FOOTERS.includes(last.embeds[0]?.footer?.text);
 
   if (isReminder && silentMs >= closeHours * HOUR_MS) {
     closingChannels.add(channel.id);
-    await channel.send('🔒 A ticketet a bot lezárta, mert sokáig nem érkezett válasz. A csatorna 5 másodperc múlva törlődik.');
-    await finishClose(channel, { reason: `${remindHours + closeHours} óra inaktivitás`, auto: true })
+    await channel.send(tr.server('autoClosed'));
+    await finishClose(channel, { reason: tr.server('inactivityReason', { hours: remindHours + closeHours }), auto: true })
       .catch((error) => { closingChannels.delete(channel.id); throw error; });
     return;
   }
   if (!isReminder && silentMs >= remindHours * HOUR_MS) {
     const embed = new EmbedBuilder().setColor(settings.warningColor)
-      .setTitle('⏰ Még aktuális ez a ticket?')
-      .setDescription(`${remindHours} órája nem írt ide senki. Ha ${closeHours} órán belül nem jön válasz, a bot lezárja a ticketet.`)
-      .setFooter({ text: REMINDER_FOOTER });
+      .setTitle(tr.server('reminderTitle'))
+      .setDescription(tr.server('reminderBody', { remind: remindHours, close: closeHours }))
+      .setFooter({ text: tr.server('reminderFooter') });
     await channel.send({
       content: `<@${info.ownerId}>`,
       embeds: [embed],
       components: [new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket:active').setLabel('Igen, még kell')
+        new ButtonBuilder().setCustomId('ticket:active').setLabel(tr.server('stillNeeded'))
           .setEmoji({ name: '✅' }).setStyle(ButtonStyle.Success),
       )],
       allowedMentions: { users: [info.ownerId] },
@@ -355,78 +531,80 @@ function startInactivityCheck(client) {
 }
 
 async function manageTicketMember(interaction) {
+  const t = tr.user(interaction);
   const { channel } = interaction;
   const ownerId = ownerOf(channel);
-  if (!ownerId) return void (await interaction.reply(ephemeral('Ezt egy ticket csatornában használd.')));
-  if (!isSupport(interaction)) return void (await interaction.reply(ephemeral('Ez csak a support csapatnak érhető el.')));
+  if (!ownerId) return void (await interaction.reply(ephemeral(t('useInTicket'))));
+  if (!isSupport(interaction)) return void (await interaction.reply(ephemeral(t('supportOnly'))));
 
-  const user = interaction.options.getUser('tag', true);
-  if (interaction.options.getSubcommand() === 'hozzaad') {
+  const user = interaction.options.getUser('member', true);
+  if (interaction.options.getSubcommand() === 'add') {
     await channel.permissionOverwrites.edit(user, {
       ViewChannel: true, SendMessages: true, ReadMessageHistory: true, AttachFiles: true,
     });
-    await interaction.reply({ content: `<@${user.id}> bekerült a ticketbe.`, allowedMentions: { users: [user.id] } });
+    await interaction.reply({ content: tr.server('memberAdded', { user: user.id }), allowedMentions: { users: [user.id] } });
     return;
   }
-  if (user.id === ownerId) return void (await interaction.reply(ephemeral('A ticket nyitóját nem veheted ki.')));
+  if (user.id === ownerId) return void (await interaction.reply(ephemeral(t('cannotRemoveOwner'))));
   await channel.permissionOverwrites.delete(user.id);
-  await interaction.reply({ content: `<@${user.id}> kikerült a ticketből.`, allowedMentions: { parse: [] } });
+  await interaction.reply({ content: tr.server('memberRemoved', { user: user.id }), allowedMentions: { parse: [] } });
 }
 
-const PERIODS = { 7: 'Utolsó 7 nap', 30: 'Utolsó 30 nap', 0: 'Összes' };
+const PERIODS = ['7', '30', '0'];
 
 async function showStats(interaction) {
-  if (!isSupport(interaction)) return void (await interaction.reply(ephemeral('Ez csak a support csapatnak érhető el.')));
-  const days = Number(interaction.options.getString('idoszak') ?? '30');
+  const t = tr.user(interaction);
+  const lang = langOf(interaction.locale);
+  if (!isSupport(interaction)) return void (await interaction.reply(ephemeral(t('supportOnly'))));
+  const days = Number(interaction.options.getString('period') ?? '30');
   const stats = summarize(days ? Date.now() - days * 24 * HOUR_MS : 0);
   const openNow = interaction.guild.channels.cache.filter((channel) => ticketInfo(channel)).size;
 
   const top = (map) => Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10)
     .map(([id, count], index) => `${index + 1}. <@${id}>: ${count}`).join('\n') || '-';
   const categories = Object.entries(stats.byCategory)
-    .map(([id, count]) => `${categoryById(id).emoji} ${categoryById(id).label}: ${count}`).join('\n') || '-';
+    .map(([id, count]) => `${categoryById(id).emoji} ${categoryLabel(categoryById(id), lang)}: ${count}`).join('\n') || '-';
 
   const embed = new EmbedBuilder().setColor(settings.color)
-    .setTitle(`📊 Ticket statisztika: ${PERIODS[days]}`)
+    .setTitle(t('statsTitle', { period: t(`period${days}`) }))
     .addFields(
-      { name: 'Nyitott most', value: String(openNow), inline: true },
-      { name: 'Új ticketek', value: String(stats.opened), inline: true },
-      { name: 'Lezárva', value: `${stats.closed} (ebből automatikusan: ${stats.autoClosed})`, inline: true },
-      { name: 'Átlagos átvételi idő', value: formatDuration(stats.averageClaimMs), inline: true },
-      { name: 'Átlagos megoldási idő', value: formatDuration(stats.averageCloseMs), inline: true },
-      { name: 'Kategóriák', value: categories },
-      { name: 'Legtöbb átvétel', value: top(stats.claimsByStaff), inline: true },
-      { name: 'Legtöbb lezárás', value: top(stats.closesByStaff), inline: true },
+      { name: t('openNow'), value: String(openNow), inline: true },
+      { name: t('newTickets'), value: String(stats.opened), inline: true },
+      { name: t('closedCount'), value: t('closedValue', { count: stats.closed, auto: stats.autoClosed }), inline: true },
+      { name: t('avgClaim'), value: formatDuration(stats.averageClaimMs, lang), inline: true },
+      { name: t('avgClose'), value: formatDuration(stats.averageCloseMs, lang), inline: true },
+      { name: t('categories'), value: categories },
+      { name: t('topClaims'), value: top(stats.claimsByStaff), inline: true },
+      { name: t('topCloses'), value: top(stats.closesByStaff), inline: true },
     )
-    .setFooter({ text: 'A statisztika a 2.5.0-s verzió óta gyűlik' });
+    .setFooter({ text: t('statsFooter') });
   await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
 }
+
+const memberOption = (option) => named(option, ['member', 'Which member?'], ['tag', 'Melyik tag?']).setRequired(true);
 
 module.exports = {
   intents: () => (config.transcriptEnabled ? [GatewayIntentBits.MessageContent] : []),
   events: { [Events.ClientReady]: startInactivityCheck },
   commands: [
-    new SlashCommandBuilder()
-      .setName('ticket-panel')
-      .setDescription('Kirakja a ticket nyitó gombokat ebbe a csatornába')
+    named(new SlashCommandBuilder(), ['ticket-panel', 'Post the ticket buttons in this channel'],
+      ['ticket-panel', 'Kirakja a ticket nyitó gombokat ebbe a csatornába'])
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
-    new SlashCommandBuilder()
-      .setName('ticket')
-      .setDescription('Tagok kezelése a ticketben')
-      .addSubcommand((sub) => sub.setName('hozzaad').setDescription('Tag hozzáadása a tickethez')
-        .addUserOption((option) => option.setName('tag').setDescription('Melyik tag?').setRequired(true)))
-      .addSubcommand((sub) => sub.setName('eltavolit').setDescription('Tag eltávolítása a ticketből')
-        .addUserOption((option) => option.setName('tag').setDescription('Melyik tag?').setRequired(true))),
-    new SlashCommandBuilder()
-      .setName('ticket-statisztika')
-      .setDescription('A ticketek és a support csapat statisztikája')
-      .addStringOption((option) => option.setName('idoszak').setDescription('Melyik időszak?')
-        .addChoices(...Object.entries(PERIODS).map(([value, name]) => ({ name, value })))),
+    named(new SlashCommandBuilder(), ['ticket', 'Manage members in the ticket'], ['ticket', 'Tagok kezelése a ticketben'])
+      .addSubcommand((sub) => named(sub, ['add', 'Add a member to the ticket'], ['hozzaad', 'Tag hozzáadása a tickethez'])
+        .addUserOption(memberOption))
+      .addSubcommand((sub) => named(sub, ['remove', 'Remove a member from the ticket'],
+        ['eltavolit', 'Tag eltávolítása a ticketből'])
+        .addUserOption(memberOption)),
+    named(new SlashCommandBuilder(), ['ticket-stats', 'Statistics of tickets and the support team'],
+      ['ticket-statisztika', 'A ticketek és a support csapat statisztikája'])
+      .addStringOption((option) => named(option, ['period', 'Which period?'], ['idoszak', 'Melyik időszak?'])
+        .addChoices(...PERIODS.map((value) => choice(value, tr.lang('en', `period${value}`), tr.lang('hu', `period${value}`))))),
   ],
   handlers: {
     'ticket-panel': postPanel,
     ticket: manageTicketMember,
-    'ticket-statisztika': showStats,
+    'ticket-stats': showStats,
     'ticket:open': showOpenModal,
     'ticket:modal': createTicket,
     'ticket:claim': claimTicket,

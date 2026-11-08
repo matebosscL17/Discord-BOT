@@ -1,4 +1,5 @@
 const { AttachmentBuilder } = require('discord.js');
+const { serverLang } = require('./i18n');
 
 const MAX_MESSAGES = 2000;
 
@@ -6,7 +7,7 @@ const escape = (text = '') => String(text)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-const formatTime = (date) => date.toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' });
+const formatTime = (date) => date.toLocaleString(serverLang() === 'en' ? 'en-GB' : 'hu-HU', { timeZone: 'Europe/Budapest' });
 
 async function fetchAll(channel) {
   const messages = [];
@@ -42,7 +43,7 @@ async function buildTranscript(channel, info) {
   const rows = Object.entries(info)
     .map(([label, value]) => `<div><span>${escape(label)}</span>${escape(value)}</div>`).join('');
   const html = `<!doctype html>
-<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="${serverLang()}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(channel.name)}</title>
 <style>
 body{margin:0;background:#313338;color:#dbdee1;font:15px/1.45 system-ui,sans-serif}
@@ -60,7 +61,7 @@ h1{font-size:20px;margin:8px 0 12px}
 .file{display:inline-block;margin-top:6px;color:#00a8fc}
 </style></head><body><main>
 <h1>${escape(channel.name)}</h1>
-<div class="info">${rows}<div><span>Üzenetek</span>${messages.length}</div></div>
+<div class="info">${rows}<div><span>${serverLang() === 'en' ? 'Messages' : 'Üzenetek'}</span>${messages.length}</div></div>
 ${messages.map(renderMessage).join('\n')}
 </main></body></html>`;
   return new AttachmentBuilder(Buffer.from(html, 'utf8'), { name: `${channel.name.replace(/[^\w-]/g, '') || 'ticket'}.html` });

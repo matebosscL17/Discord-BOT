@@ -13,12 +13,20 @@ module.exports = {
   // Példa: ownerRoleIds: ['123456789012345678'],
   ownerRoleIds: [],
 
+  // A közös üzenetek nyelve (panelek, ticketek, napló, kártyák): 'hu' vagy 'en'.
+  // A tagoknak szóló válaszok mindig a saját Discord-nyelvüket követik.
+  // A lenti szövegeket (kategóriák, kérdések, üdvözlés) ehhez igazítva írd át, ha 'en'-re váltasz.
+  language: 'hu',
+
   // A bot neve alatt megjelenő szöveg: "Nézi: ..."
   status: 'a szervert',
 
+  // A "...En" mezők az angol szövegek, ha a language 'en'.
   ticketPanel: {
     title: '🎫 Segítség kell?',
+    titleEn: '🎫 Need help?',
     description: 'Válaszd ki, miben segíthetünk, és nyílik egy privát csatorna a csapattal.',
+    descriptionEn: 'Pick what you need help with, and a private channel opens with the team.',
   },
   // Legfeljebb 5 kategória. Az "id" csak angol kisbetű és szám legyen.
   // Kategóriánként legfeljebb 5 kérdés. "long: true" = több soros válasz, "optional: true" = nem kötelező.
@@ -27,34 +35,38 @@ module.exports = {
     {
       id: 'hiba',
       label: 'Hibajelentés',
+      labelEn: 'Bug report',
       emoji: '🐞',
       questions: [
-        { label: 'Mi a hiba?', long: true },
-        { label: 'Hol és mikor történt?' },
-        { label: 'Kép vagy videó linkje', optional: true },
+        { label: 'Mi a hiba?', labelEn: 'What is the problem?', long: true },
+        { label: 'Hol és mikor történt?', labelEn: 'Where and when did it happen?' },
+        { label: 'Kép vagy videó linkje', labelEn: 'Link to a picture or video', optional: true },
       ],
     },
     {
       id: 'kerdes',
       label: 'Kérdés',
+      labelEn: 'Question',
       emoji: '❓',
-      questions: [{ label: 'Mi a kérdésed?', long: true }],
+      questions: [{ label: 'Mi a kérdésed?', labelEn: 'What is your question?', long: true }],
     },
     {
       id: 'jelentes',
       label: 'Tag jelentése',
+      labelEn: 'Report a member',
       emoji: '🚨',
       questions: [
-        { label: 'Kit jelentesz? (név)' },
-        { label: 'Mi történt?', long: true },
-        { label: 'Bizonyíték linkje (kép, videó)', optional: true },
+        { label: 'Kit jelentesz? (név)', labelEn: 'Who are you reporting? (name)' },
+        { label: 'Mi történt?', labelEn: 'What happened?', long: true },
+        { label: 'Bizonyíték linkje (kép, videó)', labelEn: 'Link to proof (picture, video)', optional: true },
       ],
     },
     {
       id: 'egyeb',
       label: 'Egyéb',
+      labelEn: 'Other',
       emoji: '💬',
-      questions: [{ label: 'Miben segíthetünk?', long: true }],
+      questions: [{ label: 'Miben segíthetünk?', labelEn: 'How can we help?', long: true }],
     },
   ],
 
@@ -66,10 +78,10 @@ module.exports = {
   },
 
   changelogTypes: [
-    { id: 'frissites', label: 'Frissítés', emoji: '📢', color: 0x5865f2 },
-    { id: 'ujdonsag', label: 'Újdonság', emoji: '✨', color: 0x57f287 },
-    { id: 'javitas', label: 'Javítás', emoji: '🛠️', color: 0xfee75c },
-    { id: 'esemeny', label: 'Esemény', emoji: '🎉', color: 0xeb459e },
+    { id: 'frissites', label: 'Frissítés', labelEn: 'Update', emoji: '📢', color: 0x5865f2 },
+    { id: 'ujdonsag', label: 'Újdonság', labelEn: 'New feature', emoji: '✨', color: 0x57f287 },
+    { id: 'javitas', label: 'Javítás', labelEn: 'Fix', emoji: '🛠️', color: 0xfee75c },
+    { id: 'esemeny', label: 'Esemény', labelEn: 'Event', emoji: '🎉', color: 0xeb459e },
   ],
   // A changelog sorok elején ezek a jelek ikonra cserélődnek
   changelogLineIcons: { '+': '🟢', '-': '🔴', '!': '🟡' },
@@ -119,4 +131,5 @@ module.exports = {
   },
 
   welcomeMessage: 'Üdv a szerveren, {user}! Örülünk, hogy itt vagy. 🎉',
+  welcomeMessageEn: 'Welcome to the server, {user}! Glad to have you here. 🎉',
 };

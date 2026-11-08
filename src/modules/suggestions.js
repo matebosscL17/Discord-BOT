@@ -1,28 +1,71 @@
 const {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, ModalBuilder,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, MessageFlags, ModalBuilder,
   PermissionFlagsBits, SlashCommandBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
 const config = require('../config');
 const settings = require('../../settings');
-const { ChannelType } = require('discord.js');
 const { findChannel, userError } = require('../channels');
 const { ephemeral, sendLog } = require('../utils');
+const { named, translator } = require('../i18n');
+
+const tr = translator({
+  hu: {
+    notSet: 'A(z) ötletek csatorna nincs beállítva. Szólj egy adminnak!',
+    wait: 'Következő ötletet {minutes} perc múlva küldhetsz.',
+    author: '💡 Ötlet: {name}',
+    vote: 'Szavazz: {up} vagy {down}',
+    accept: 'Elfogadás',
+    reject: 'Elutasítás',
+    posted: 'Kikerült az ötleted: {url}',
+    staffOnly: 'Ezt csak a csapat teheti meg.',
+    accepted: 'Elfogadva',
+    rejected: 'Elutasítva',
+    reasonLabel: 'Indok (nem kötelező)',
+    votes: 'Szavazatok',
+    decision: 'Döntés',
+    reason: 'Indok',
+    dm: '{emoji} Az ötletedről döntés született: **{label}**.',
+    dmReason: 'Indok: {reason}',
+    logTitle: '💡 Ötlet: {label}',
+    logBody: '**Beküldő:** <@{author}>\n**Döntött:** <@{staff}>\n**Szavazatok:** {score}\n{url}',
+  },
+  en: {
+    notSet: 'The suggestions channel is not set up. Ask an admin!',
+    wait: 'You can send your next suggestion in {minutes} minutes.',
+    author: '💡 Suggestion: {name}',
+    vote: 'Vote: {up} or {down}',
+    accept: 'Accept',
+    reject: 'Reject',
+    posted: 'Your suggestion was posted: {url}',
+    staffOnly: 'Only the team can do this.',
+    accepted: 'Accepted',
+    rejected: 'Rejected',
+    reasonLabel: 'Reason (optional)',
+    votes: 'Votes',
+    decision: 'Decision',
+    reason: 'Reason',
+    dm: '{emoji} A decision was made on your suggestion: **{label}**.',
+    dmReason: 'Reason: {reason}',
+    logTitle: '💡 Suggestion: {label}',
+    logBody: '**Sent by:** <@{author}>\n**Decided by:** <@{staff}>\n**Votes:** {score}\n{url}',
+  },
+});
 
 const UP = '👍';
 const DOWN = '👎';
 const cooldowns = new Map();
+const DECISIONS = {
+  accept: { key: 'accepted', emoji: '✅', color: settings.successColor },
+  reject: { key: 'rejected', emoji: '❌', color: settings.errorColor },
+};
 
 async function suggestionsChannel(guild) {
   const channel = await findChannel(guild, 'suggestions', {
     id: settings.suggestions.channelId, name: settings.suggestions.channelName, type: ChannelType.GuildText,
   });
-  if (!channel) throw userError('A(z) ötletek csatorna nincs beállítva. Szólj egy adminnak!');
+  if (!channel) throw userError(tr.lang('hu', 'notSet'), tr.lang('en', 'notSet'));
   return channel;
 }
-const DECISIONS = {
-  accept: { label: 'Elfogadva', emoji: '✅', color: settings.successColor },
-  reject: { label: 'Elutasítva', emoji: '❌', color: settings.errorColor },
-};
 
 const isStaff = (interaction) => interaction.member.roles.cache.has(config.supportRoleId)
   || interaction.memberPermissions.has(PermissionFlagsBits.ManageGuild);
@@ -32,23 +75,24 @@ const votesOf = (message, emoji) => Math.max(
 );
 
 async function submit(interaction) {
+  const t = tr.user(interaction);
   const waitMs = (cooldowns.get(interaction.user.id) ?? 0) + settings.suggestions.cooldownMinutes * 60000 - Date.now();
   if (waitMs > 0) {
-    return void (await interaction.reply(ephemeral(`Következő ötletet ${Math.ceil(waitMs / 60000)} perc múlva küldhetsz.`)));
+    return void (await interaction.reply(ephemeral(t('wait', { minutes: Math.ceil(waitMs / 60000) }))));
   }
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   const { user } = interaction;
   const channel = await suggestionsChannel(interaction.guild);
   const embed = new EmbedBuilder().setColor(settings.color)
-    .setAuthor({ name: `💡 Ötlet: ${user.username}` })
-    .setDescription(interaction.options.getString('szoveg', true))
-    .setFooter({ text: `Szavazz: ${UP} vagy ${DOWN}` })
+    .setAuthor({ name: tr.server('author', { name: user.username }) })
+    .setDescription(interaction.options.getString('text', true))
+    .setFooter({ text: tr.server('vote', { up: UP, down: DOWN }) })
     .setTimestamp();
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`sug:decide:accept:${user.id}`).setLabel('Elfogadás')
+    new ButtonBuilder().setCustomId(`sug:decide:accept:${user.id}`).setLabel(tr.server('accept'))
       .setEmoji({ name: '✅' }).setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId(`sug:decide:reject:${user.id}`).setLabel('Elutasítás')
+    new ButtonBuilder().setCustomId(`sug:decide:reject:${user.id}`).setLabel(tr.server('reject'))
       .setEmoji({ name: '❌' }).setStyle(ButtonStyle.Danger),
   );
 
@@ -56,55 +100,59 @@ async function submit(interaction) {
   await message.react(UP);
   await message.react(DOWN);
   cooldowns.set(user.id, Date.now());
-  await interaction.editReply(`Kikerült az ötleted: ${message.url}`);
+  await interaction.editReply(t('posted', { url: message.url }));
 }
 
 async function showDecision(interaction, [decision, authorId]) {
-  if (!isStaff(interaction)) return void (await interaction.reply(ephemeral('Ezt csak a csapat teheti meg.')));
+  const t = tr.user(interaction);
+  if (!isStaff(interaction)) return void (await interaction.reply(ephemeral(t('staffOnly'))));
   await interaction.showModal(new ModalBuilder()
     .setCustomId(`sug:modal:${decision}:${authorId}`)
-    .setTitle(DECISIONS[decision].label)
+    .setTitle(t(DECISIONS[decision].key))
     .addComponents(new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('reason').setLabel('Indok (nem kötelező)')
+      new TextInputBuilder().setCustomId('reason').setLabel(t('reasonLabel'))
         .setStyle(TextInputStyle.Paragraph).setRequired(false).setMaxLength(500),
     )));
 }
 
 async function decide(interaction, [decision, authorId]) {
-  if (!isStaff(interaction)) return void (await interaction.reply(ephemeral('Ezt csak a csapat teheti meg.')));
+  if (!isStaff(interaction)) return void (await interaction.reply(ephemeral(tr.user(interaction)('staffOnly'))));
   await interaction.deferUpdate();
 
   const message = await interaction.channel.messages.fetch({ message: interaction.message.id, force: true });
-  const { label, emoji, color } = DECISIONS[decision];
+  const { key, emoji, color } = DECISIONS[decision];
+  const label = tr.server(key);
   const reason = interaction.fields.getTextInputValue('reason').trim();
   const score = `${UP} ${votesOf(message, UP)}   ${DOWN} ${votesOf(message, DOWN)}`;
   const embed = EmbedBuilder.from(message.embeds[0]).setColor(color)
     .setFooter({ text: `${label}: ${interaction.user.username}` })
     .addFields(
-      { name: 'Szavazatok', value: score, inline: true },
-      { name: 'Döntés', value: `${emoji} ${label}`, inline: true },
+      { name: tr.server('votes'), value: score, inline: true },
+      { name: tr.server('decision'), value: `${emoji} ${label}`, inline: true },
     );
-  if (reason) embed.addFields({ name: 'Indok', value: reason });
+  if (reason) embed.addFields({ name: tr.server('reason'), value: reason });
   await message.edit({ embeds: [embed], components: [] });
 
-  await interaction.client.users.send(authorId, {
-    content: `${emoji} Az ötletedről döntés született: **${label}**.${reason ? `\nIndok: ${reason}` : ''}\n${message.url}`,
-    allowedMentions: { parse: [] },
-  }).catch(() => {}); // Sokaknál tiltva van a privát üzenet, ez nem hiba.
+  const dmLines = [tr.server('dm', { emoji, label })];
+  if (reason) dmLines.push(tr.server('dmReason', { reason }));
+  dmLines.push(message.url);
+  await interaction.client.users.send(authorId, { content: dmLines.join('\n'), allowedMentions: { parse: [] } })
+    .catch(() => {}); // Sokaknál tiltva van a privát üzenet, ez nem hiba.
   await sendLog(interaction.guild, {
-    title: `💡 Ötlet: ${label}`,
-    description: `**Beküldő:** <@${authorId}>\n**Döntött:** <@${interaction.user.id}>\n**Szavazatok:** ${score}\n${message.url}`,
+    title: tr.server('logTitle', { label }),
+    description: tr.server('logBody', {
+      author: authorId, staff: interaction.user.id, score, url: message.url,
+    }),
     color,
   });
 }
 
 module.exports = {
   commands: [
-    new SlashCommandBuilder()
-      .setName('otlet')
-      .setDescription('Ötlet beküldése a javaslatdobozba')
-      .addStringOption((option) => option.setName('szoveg').setDescription('Mi az ötleted?')
+    named(new SlashCommandBuilder(), ['suggest', 'Send an idea to the suggestion box'],
+      ['otlet', 'Ötlet beküldése a javaslatdobozba'])
+      .addStringOption((option) => named(option, ['text', 'What is your idea?'], ['szoveg', 'Mi az ötleted?'])
         .setRequired(true).setMaxLength(1000)),
   ],
-  handlers: { otlet: submit, 'sug:decide': showDecision, 'sug:modal': decide },
+  handlers: { suggest: submit, 'sug:decide': showDecision, 'sug:modal': decide },
 };

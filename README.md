@@ -2,6 +2,15 @@
 
 Moduláris Discord bot. Minden funkció külön fájl a `src/modules` mappában.
 
+## Nyelvek
+
+A bot magyarul és angolul is működik:
+- **A tagoknak szóló válaszok** a tag saját Discord-nyelvét követik: magyar Discordon magyarul, minden más nyelvnél angolul.
+- **A parancsok neve és leírása** is így jelenik meg. Magyar Discordon például `/nemit`, angolon `/mute`. A zárójelben a magyar név szerepel.
+- **A közös üzenetek** (ticket panel, ticketek, kártyák, napló, bejelentések) a `settings.js` fájl `language` beállítását követik: `'hu'` vagy `'en'`.
+
+Ha `'en'`-re váltasz, a `settings.js` szövegeinek (kategóriák, kérdések, panel, üdvözlés) az angol változata (`...En` mezők) jelenik meg. A `frissitesek.js` bejegyzéseihez is írhatsz `en` részt.
+
 ## Parancsok
 
 | Parancs | Mit csinál | Ki használhatja |
@@ -9,16 +18,16 @@ Moduláris Discord bot. Minden funkció külön fájl a `src/modules` mappában.
 | `/changelog` | Bejelentés típussal, ikonokkal, opcionális pinggel | Szerver kezelése jog |
 | `/ticket-panel` | Ticket gombok kategóriánként | Szerver kezelése jog |
 | `/ticket hozzaad`, `/ticket eltavolit` | Tag kezelése a ticketben | Support rang |
-| `/ticket-statisztika` | Ticket és csapat statisztika | Support rang |
-| `/rangpanel` | Rangválasztó gombok, legfeljebb 10 rang | Rangok kezelése jog |
+| `/ticket-stats` (`/ticket-statisztika`) | Ticket és csapat statisztika | Support rang |
+| `/rolepanel` (`/rangpanel`) | Rangválasztó gombok, legfeljebb 10 rang | Rangok kezelése jog |
 | `/kick`, `/ban`, `/unban` | Kirúgás, kitiltás, feloldás | Megfelelő jog |
-| `/nemit`, `/nemitas-fel` | Némítás és feloldása | Tagok moderálása jog |
-| `/torles` | 1-100 üzenet törlése | Üzenetek kezelése jog |
+| `/mute`, `/unmute` (`/nemit`, `/nemitas-fel`) | Némítás és feloldása | Tagok moderálása jog |
+| `/purge` (`/torles`) | 1-100 üzenet törlése | Üzenetek kezelése jog |
 | `/lfg` | Csapatkereső gombokkal, megteltekor privát hangszoba | Mindenki |
-| `/klip` | Klip beküldése a klipfalra | Mindenki |
-| `/otlet` | Ötlet beküldése a javaslatdobozba | Mindenki |
+| `/clip` (`/klip`) | Klip beküldése a klipfalra | Mindenki |
+| `/suggest` (`/otlet`) | Ötlet beküldése a javaslatdobozba | Mindenki |
 | `/createcategory`, `/createchannel` | Kategória és csatorna létrehozása | Csak tulajok |
-| `/help`, `/ping`, `/szerverinfo` | Súgó és adatok | Mindenki |
+| `/help`, `/ping`, `/serverinfo` (`/szerverinfo`) | Súgó és adatok | Mindenki |
 
 A ticketek sorszámot kapnak (pl. `🐞•ticket-0042`), és nyitáskor a kategóriától függő kérdéseket tesznek fel. A kérdéseket a `settings.js` fájl `ticketCategories` részében írhatod át, kategóriánként legfeljebb 5-öt.
 

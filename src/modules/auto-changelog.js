@@ -3,8 +3,15 @@ const config = require('../config');
 const settings = require('../../settings');
 const updates = require('../../frissitesek');
 const { formatChangelogLine } = require('../utils');
+const { serverLang, translator } = require('../i18n');
 
-const FOOTER_PREFIX = 'Bot verzió: ';
+const tr = translator({
+  hu: { footer: 'Bot verzió: ', public: '🤖 Bot frissítés', private: '🔒 Privát frissítés' },
+  en: { footer: 'Bot version: ', public: '🤖 Bot update', private: '🔒 Private update' },
+});
+// Mindkét nyelvű láblécet felismeri, így nyelvváltás után sem ismétel.
+const FOOTER_PREFIXES = ['Bot verzió: ', 'Bot version: '];
+
 
 // A csatorna üzeneteiből kiderül, mi ment már ki, így ehhez nem kell adatbázis.
 async function postedVersions(channels, botId) {
@@ -13,12 +20,16 @@ async function postedVersions(channels, botId) {
     const messages = await channel.messages.fetch({ limit: 100 });
     for (const message of messages.values()) {
       const footer = message.embeds[0]?.footer?.text;
-      if (message.author.id === botId && footer?.startsWith(FOOTER_PREFIX)) {
-        versions.add(footer.slice(FOOTER_PREFIX.length));
-      }
+      const prefix = FOOTER_PREFIXES.find((item) => footer?.startsWith(item));
+      if (message.author.id === botId && prefix) versions.add(footer.slice(prefix.length));
     }
   }
   return versions;
+}
+
+// Ha a szerver angol, és a bejegyzésnek van "en" része, azt használja.
+function localized(update) {
+  return serverLang() === 'en' && update.en ? { ...update, ...update.en } : update;
 }
 
 async function postUpdate(channel, update, lines, label) {
@@ -28,7 +39,7 @@ async function postUpdate(channel, update, lines, label) {
     .setAuthor({ name: label })
     .setTitle(update.cim)
     .setDescription(lines.map(formatChangelogLine).join('\n').slice(0, 4096))
-    .setFooter({ text: `${FOOTER_PREFIX}${update.verzio}` })
+    .setFooter({ text: `${tr.server('footer')}${update.verzio}` })
     .setTimestamp();
   await channel.send({ embeds: [embed], allowedMentions: { parse: [] } });
 }
@@ -47,9 +58,10 @@ async function announceUpdates(client) {
     const privateChannel = await guild.channels.fetch(config.logChannelId);
     const posted = await postedVersions([publicChannel, privateChannel], client.user.id);
 
-    for (const update of pendingUpdates(posted).reverse()) {
-      await postUpdate(publicChannel, update, update.valtozasok, '🤖 Bot frissítés');
-      await postUpdate(privateChannel, update, update.privatValtozasok, '🔒 Privát frissítés');
+    for (const original of pendingUpdates(posted).reverse()) {
+      const update = localized(original);
+      await postUpdate(publicChannel, update, update.valtozasok, tr.server('public'));
+      await postUpdate(privateChannel, update, update.privatValtozasok, tr.server('private'));
       console.log(`Changelog kirakva: ${update.verzio}`);
     }
   } catch (error) {

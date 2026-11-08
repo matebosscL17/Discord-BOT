@@ -25,10 +25,10 @@ async function findChannel(guild, key, {
   return channel ?? null;
 }
 
-// Hiba, amit a tag is láthat: a bot ezt írja ki neki a "Valami hiba történt" helyett.
-function userError(message) {
-  const error = new Error(message);
-  error.userMessage = message;
+// Hiba, amit a tag is láthat, mindkét nyelven: userError('magyar szöveg', 'English text')
+function userError(hu, en = hu) {
+  const error = new Error(hu);
+  error.userMessages = { hu, en };
   return error;
 }
 
