@@ -5,7 +5,7 @@ const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link 
 
 const STYLE = `
 :root{
-  --night:#151730;--floor:#1d2042;--glass:#10122a;--rail:#343a6e;--rail-soft:#262a55;
+  --night:#151730;--floor:#1d2042;--pane:rgba(29,32,66,.9);--pane-strong:rgba(22,24,52,.93);--glass:#10122a;--rail:#343a6e;--rail-soft:#262a55;
   --window:#f5b947;--window-glow:rgba(245,185,71,.45);--neon:#9d8cff;
   --text:#eceaf7;--dim:#a3a1c6;--ok:#52c98e;--bad:#f06a78;
   --display:"Saira Condensed",sans-serif-condensed,"Roboto Condensed","Arial Narrow",system-ui,sans-serif;--body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -13,7 +13,9 @@ const STYLE = `
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--night);color:var(--text);font:16px/1.5 var(--body);-webkit-text-size-adjust:100%}
+html{background:var(--night)}
+body{margin:0;background:transparent;color:var(--text);font:16px/1.5 var(--body);-webkit-text-size-adjust:100%}
+canvas.bg{position:fixed;inset:0;z-index:-1;display:block;pointer-events:none}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--neon)}
 :focus-visible{outline:2px solid var(--window);outline-offset:2px}
@@ -24,7 +26,7 @@ p{margin:0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 /* Váz */
-.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(21,23,48,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--rail-soft)}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(15,17,40,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--rail-soft)}
 .top .who{flex:1;min-width:0}
 .top .who b{display:block;font-family:var(--display);font-size:20px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .who span{font-size:13px;color:var(--dim)}
@@ -35,7 +37,7 @@ p{margin:0}
 .menu-btn i,.menu-btn i::before,.menu-btn i::after{display:block;width:18px;height:2px;background:var(--text);border-radius:2px;position:relative}
 .menu-btn i::before,.menu-btn i::after{content:"";position:absolute}.menu-btn i::before{top:-6px}.menu-btn i::after{top:6px}
 
-.side{position:fixed;inset:0 auto 0 0;z-index:30;width:min(86vw,300px);background:var(--glass);border-right:1px solid var(--rail-soft);display:flex;flex-direction:column;transform:translateX(-102%);transition:transform .22s ease}
+.side{position:fixed;inset:0 auto 0 0;z-index:30;width:min(86vw,300px);background:var(--pane-strong);border-right:1px solid var(--rail-soft);display:flex;flex-direction:column;transform:translateX(-102%);transition:transform .22s ease}
 .side.open{transform:none}
 .scrim{position:fixed;inset:0;z-index:25;background:rgba(5,6,18,.6);opacity:0;pointer-events:none;transition:opacity .2s}
 .scrim.open{opacity:1;pointer-events:auto}
@@ -61,7 +63,7 @@ main{max-width:780px;margin:0 auto;padding:20px 16px 140px}
 .page-head{margin:4px 0 18px}.page-head p{color:var(--dim);margin-top:6px;max-width:60ch}
 
 /* Panelek és mezők */
-.panel{background:var(--floor);border:1px solid var(--rail-soft);border-radius:16px;padding:6px 16px;margin-bottom:14px}
+.panel{background:var(--pane);border:1px solid var(--rail-soft);border-radius:16px;padding:6px 16px;margin-bottom:14px}
 .panel.pad{padding:16px}
 .field{position:relative;padding:14px 0;border-bottom:1px solid var(--rail-soft)}
 .field:last-child{border-bottom:0}
@@ -102,7 +104,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--neon);outline:none}
 .btn:disabled{opacity:.45;cursor:default}
 .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
 
-.bar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--glass);border-top:1px solid var(--rail);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:8px;flex-wrap:wrap;align-items:center;transform:translateY(110%);visibility:hidden;transition:transform .2s ease,visibility .2s}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--pane-strong);border-top:1px solid var(--rail);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:8px;flex-wrap:wrap;align-items:center;transform:translateY(110%);visibility:hidden;transition:transform .2s ease,visibility .2s}
 .bar.show{transform:none;visibility:visible}
 .bar .msg{flex:1 1 100%;font-size:14px;color:var(--dim)}.bar .btn{flex:1 1 0}
 @media(min-width:640px){.bar .msg{flex:1 1 auto}.bar .btn{flex:none}.toasts{bottom:96px}}
@@ -128,7 +130,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--neon);outline:none}
 @keyframes light{from{fill:#2a2f63;filter:none}}
 .numbers{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
 @media(min-width:640px){.numbers{grid-template-columns:repeat(4,1fr)}}
-.number{background:var(--floor);border:1px solid var(--rail-soft);border-radius:14px;padding:12px 14px}
+.number{background:var(--pane);border:1px solid var(--rail-soft);border-radius:14px;padding:12px 14px}
 .number b{display:block;font-family:var(--display);font-size:34px;font-weight:600;line-height:1.1}
 .number span{color:var(--dim);font-size:14px}
 .duo{display:grid;gap:14px}
@@ -140,7 +142,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--neon);outline:none}
 .big{font-family:var(--display);font-size:30px;font-weight:600;line-height:1.1;margin-top:6px}
 
 /* Szerkesztők */
-.item{background:var(--floor);border:1px solid var(--rail-soft);border-radius:16px;padding:16px;margin-bottom:14px;display:grid;gap:10px}
+.item{background:var(--pane);border:1px solid var(--rail-soft);border-radius:16px;padding:16px;margin-bottom:14px;display:grid;gap:10px}
 .item .head{display:flex;gap:10px;align-items:center}.item .head>*:first-child{flex:1}
 .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .days label{text-align:center;border:1px solid var(--rail);border-radius:10px;padding:8px 6px;cursor:pointer;font-size:14px;user-select:none}
@@ -171,7 +173,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--neon);outline:none}
 .seg button.on{background:var(--floor);color:var(--text)}
 
 /* Belépés */
-.login{min-height:100vh;display:grid;align-content:center;justify-items:center;padding:24px 16px;background:linear-gradient(#0e1026,var(--night) 60%)}
+.login{min-height:100vh;display:grid;align-content:center;justify-items:center;padding:24px 16px}
+.login form{background:var(--pane);border:1px solid var(--rail-soft);border-radius:20px;padding:24px}
 .login form{width:100%;max-width:340px;display:grid;gap:12px}
 .login h1{font-size:46px;font-weight:700}
 .login .err{color:var(--bad);font-size:15px}
@@ -191,7 +194,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--neon);outline:none}
 .trend{font-size:14px;color:var(--dim)}
 /* Tagkereső */
 .people{display:grid;gap:6px;margin-top:12px}
-.person{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--floor);border:1px solid var(--rail-soft);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--text)}
+.person{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--pane);border:1px solid var(--rail-soft);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--text)}
 .person:hover{border-color:var(--rail)}
 .person img,.person .pf{width:36px;height:36px;border-radius:50%;flex:none;background:var(--rail-soft);object-fit:cover}
 .person small{display:block;color:var(--dim)}
@@ -213,31 +216,147 @@ input:focus,select:focus,textarea:focus{border-color:var(--neon);outline:none}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 `;
 
-// A belépőoldal kis látképe (nincs benne JavaScript).
-function staticSkyline() {
-  const towers = [[8, 70], [62, 96], [122, 120], [190, 84], [246, 104], [300, 64]];
-  let svg = '<svg viewBox="0 0 340 130" aria-hidden="true">';
-  towers.forEach(([x, h], t) => {
-    svg += `<rect x="${x}" y="${130 - h}" width="44" height="${h}" rx="3" fill="#1d2042"/>`;
-    for (let row = 0; row * 14 + 12 < h - 6; row += 1) {
-      for (let col = 0; col < 3; col += 1) {
-        const lit = (t * 7 + row * 3 + col * 5) % 9 === 0;
-        svg += `<rect x="${x + 6 + col * 12}" y="${130 - h + 10 + row * 14}" width="8" height="7" rx="1" fill="${lit ? '#f5b947' : '#2a2f63'}"/>`;
+// Animált háttér: csillagos ég, hold, hullócsillag és egy város, ahol lassan fel-le kapcsolnak az ablakok.
+// Telefonkímélő: legfeljebb 20 képkocka/mp, háttérbe tett lapon megáll, "kevesebb mozgás" beállításnál álló kép.
+const BG_SCRIPT = String.raw`
+(function () {
+  'use strict';
+  var canvas = document.createElement('canvas');
+  canvas.className = 'bg';
+  canvas.setAttribute('aria-hidden', 'true');
+  window.BG_CANVAS = canvas;
+  document.body.prepend(canvas);
+  var ctx = canvas.getContext('2d');
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W = 0, H = 0, DPR = 1, sky = null, far = null, near = null, stars = [], windows = [], shooting = null, nextShot = 0, last = 0, scrollShift = 0;
+  var rand = function (a, b) { return a + Math.random() * (b - a); };
+
+  function layer(color, minH, maxH, minW, maxW, withWindows) {
+    var c = document.createElement('canvas');
+    c.width = W * DPR; c.height = H * DPR;
+    var g = c.getContext('2d');
+    g.scale(DPR, DPR);
+    g.fillStyle = color;
+    var x = -10;
+    while (x < W + 10) {
+      var w = rand(minW, maxW), h = rand(minH, maxH) * H, top = H - h;
+      g.fillRect(x, top, w, h + 2);
+      if (Math.random() < 0.25) { g.fillRect(x + w / 2 - 1, top - 14, 2, 14); }
+      if (withWindows) {
+        var cols = Math.max(2, Math.floor((w - 8) / 10));
+        for (var row = top + 10; row < H - 8; row += 13) {
+          for (var col = 0; col < cols; col += 1) {
+            var wx = x + 6 + col * ((w - 12) / cols);
+            if (Math.random() < 0.55) {
+              g.fillStyle = 'rgba(60,66,130,0.55)'; g.fillRect(wx, row, 5, 6); g.fillStyle = color;
+              if (Math.random() < 0.09) windows.push({ x: wx, y: row, on: Math.random() < 0.5, next: performance.now() + rand(2000, 20000), warm: Math.random() < 0.8 });
+            }
+          }
+        }
+      }
+      x += w + rand(2, 10);
+    }
+    return c;
+  }
+
+  function resize() {
+    W = window.innerWidth; H = window.innerHeight; DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    sky = document.createElement('canvas'); sky.width = W * DPR; sky.height = H * DPR;
+    var g = sky.getContext('2d'); g.scale(DPR, DPR);
+    var grad = g.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#090b1f'); grad.addColorStop(0.55, '#151730'); grad.addColorStop(1, '#2a1f4a');
+    g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    // Hold: világos kör, belőle kivágva egy eltolt kör, körülötte halvány fény.
+    var mx = W * 0.84, my = Math.min(H * 0.13, 110), mr = Math.max(14, Math.min(W, H) * 0.035);
+    var glow = g.createRadialGradient(mx, my, mr * 0.5, mx, my, mr * 5);
+    glow.addColorStop(0, 'rgba(255,236,190,0.16)'); glow.addColorStop(1, 'rgba(255,236,190,0)');
+    g.fillStyle = glow; g.fillRect(mx - mr * 5, my - mr * 5, mr * 10, mr * 10);
+    var moon = document.createElement('canvas'); moon.width = moon.height = Math.ceil(mr * 2 + 4);
+    var mg = moon.getContext('2d');
+    mg.fillStyle = '#f6ecd0'; mg.beginPath(); mg.arc(mr + 2, mr + 2, mr, 0, Math.PI * 2); mg.fill();
+    mg.globalCompositeOperation = 'destination-out';
+    mg.beginPath(); mg.arc(mr + 2 + mr * 0.45, mr + 2 - mr * 0.2, mr * 0.92, 0, Math.PI * 2); mg.fill();
+    g.drawImage(moon, mx - mr - 2, my - mr - 2);
+    var count = Math.min(240, Math.round(W * H / 4500));
+    stars = [];
+    for (var i = 0; i < count; i += 1) stars.push({ x: rand(0, W), y: rand(0, H * 0.78), r: Math.random() < 0.12 ? rand(1.1, 1.7) : rand(0.4, 1), phase: rand(0, Math.PI * 2), speed: rand(0.0006, 0.0022), base: rand(0.35, 0.85) });
+    windows = [];
+    far = layer('#1b1d3f', 0.10, 0.22, 26, 70, false);
+    near = layer('#0d0f26', 0.06, 0.16, 34, 90, true);
+    draw(performance.now());
+  }
+
+  function draw(now) {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.drawImage(sky, 0, 0, W, H);
+    // Lassan úszó fényfátyol (sarki fény jelleggel) és a város fénye a látóhatáron.
+    var t = now * 0.00004;
+    var ax = W * (0.3 + 0.2 * Math.sin(t)), ay = H * (0.25 + 0.05 * Math.cos(t * 1.3));
+    var aurora = ctx.createRadialGradient(ax, ay, 0, ax, ay, Math.max(W, H) * 0.55);
+    aurora.addColorStop(0, 'rgba(157,140,255,0.13)'); aurora.addColorStop(1, 'rgba(157,140,255,0)');
+    ctx.fillStyle = aurora; ctx.fillRect(0, 0, W, H);
+    var haze = ctx.createLinearGradient(0, H * 0.6, 0, H);
+    haze.addColorStop(0, 'rgba(245,185,71,0)'); haze.addColorStop(1, 'rgba(245,185,71,' + (0.10 + 0.03 * Math.sin(now * 0.0005)) + ')');
+    ctx.fillStyle = haze; ctx.fillRect(0, H * 0.6, W, H * 0.4);
+    // Csillagok
+    for (var i = 0; i < stars.length; i += 1) {
+      var st = stars[i];
+      ctx.globalAlpha = still ? st.base : Math.max(0.1, st.base + Math.sin(st.phase + now * st.speed) * 0.35);
+      ctx.fillStyle = '#e6e3ff';
+      ctx.fillRect(st.x, st.y, st.r, st.r);
+    }
+    ctx.globalAlpha = 1;
+    // Hullócsillag
+    if (!still) {
+      if (!shooting && now > nextShot) {
+        shooting = { x: rand(W * 0.1, W * 0.8), y: rand(10, H * 0.3), vx: rand(0.5, 0.8), vy: rand(0.18, 0.3), start: now, life: 0 };
+        nextShot = now + rand(6000, 14000);
+      }
+      if (shooting) {
+        shooting.life = now - shooting.start;
+        var sx = shooting.x + shooting.vx * shooting.life, sy = shooting.y + shooting.vy * shooting.life;
+        var tail = ctx.createLinearGradient(sx, sy, sx - shooting.vx * 140, sy - shooting.vy * 140);
+        var fade = Math.max(0, 1 - shooting.life / 900);
+        tail.addColorStop(0, 'rgba(255,240,210,' + fade + ')'); tail.addColorStop(1, 'rgba(255,240,210,0)');
+        ctx.strokeStyle = tail; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - shooting.vx * 140, sy - shooting.vy * 140); ctx.stroke();
+        if (shooting.life > 900) shooting = null;
       }
     }
-  });
-  return `${svg}<rect x="132" y="2" width="24" height="10" rx="2" fill="#f5b947"/></svg>`;
-}
+    // Város: a távoli sor lassabban, a közeli gyorsabban süllyed görgetéskor.
+    ctx.drawImage(far, 0, scrollShift * 0.5, W, H);
+    ctx.drawImage(near, 0, scrollShift, W, H);
+    for (var j = 0; j < windows.length; j += 1) {
+      var win = windows[j];
+      if (!still && now > win.next) { win.on = !win.on; win.next = now + rand(4000, 30000); }
+      if (!win.on) continue;
+      ctx.fillStyle = win.warm ? '#f5b947' : '#bfb6ff';
+      ctx.fillRect(win.x, win.y + scrollShift, 5, 6);
+    }
+  }
+
+  function loop(now) {
+    if (!document.hidden && now - last > 50) { last = now; draw(now); }
+    window.requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', function () { clearTimeout(resize.timer); resize.timer = setTimeout(resize, 150); });
+  window.addEventListener('scroll', function () { scrollShift = Math.min(70, window.scrollY * 0.06); if (still) draw(performance.now()); }, { passive: true });
+  resize();
+  if (!still) window.requestAnimationFrame(loop);
+})();
+`;
 
 function loginPage(error) {
   const message = error === 'wrong' ? 'Hibás jelszó. Próbáld újra. / Wrong password.'
     : error === 'wait' ? 'Túl sok próbálkozás. Várj 5 percet. / Too many attempts, wait 5 minutes.' : '';
   return `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#151730"><title>Vezérlőpult</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">${FONTS}<style>${STYLE}</style></head><body>
-<div class="login">${staticSkyline()}<form method="post" action="/login">
+<div class="login"><form method="post" action="/login">
 <h1>Vezérlőpult</h1><p class="dim">Lépj be a .env fájlban megadott DASHBOARD_PASSWORD jelszóval.</p>
 <label class="sr" for="pw">Jelszó</label><input id="pw" type="password" name="password" placeholder="Jelszó / Password" autocomplete="current-password" required autofocus>
-<button class="btn" type="submit">Belépés / Log in</button>${message ? `<p class="err" role="alert">${message}</p>` : ''}</form></div></body></html>`;
+<button class="btn" type="submit">Belépés / Log in</button>${message ? `<p class="err" role="alert">${message}</p>` : ''}</form></div><script>${BG_SCRIPT}</script></body></html>`;
 }
 
 const SCRIPT = String.raw`
@@ -519,7 +638,6 @@ function skyline(stats) {
   const games = stats.games.slice(0, 5);
   const width = 360; const ground = 170;
   const svg = s('svg', { viewBox: '0 0 ' + width + ' ' + ground, role: 'img', 'aria-label': t('overview') });
-  for (let i = 0; i < 26; i += 1) svg.append(s('circle', { cx: (i * 53) % width, cy: 6 + ((i * 29) % 46), r: i % 4 ? 0.8 : 1.3, fill: '#a3a1c6', opacity: 0.5 }));
   const slot = width / Math.max(games.length, 1);
   let order = 0;
   games.forEach((game, g) => {
@@ -963,9 +1081,9 @@ function build() {
   bar.restart = h('button', { class: 'btn', type: 'button', onclick: () => saveSettings(true) }, t('saveRestart'));
   bar.el = h('div', { class: 'bar' }, bar.msg, bar.save, bar.restart);
   document.documentElement.lang = LANG ? 'en' : 'hu';
-  document.body.replaceChildren(
+  document.body.replaceChildren(...[window.BG_CANVAS || null,
     h('header', { class: 'top' }, h('button', { class: 'menu-btn', type: 'button', 'aria-label': 'Menu', onclick: openMenu }, h('i')), shell.avatar, shell.who),
-    shell.side, shell.scrim, shell.main, h('div', { class: 'toasts' }), bar.el);
+    shell.side, shell.scrim, shell.main, h('div', { class: 'toasts' }), bar.el].filter(Boolean));
   drawNav(); paintHeader(); updateBar();
   go(VIEW);
 }
@@ -983,7 +1101,7 @@ Promise.all([api('/api/meta'), api('/api/stats').catch(() => null)]).then(([meta
 
 function appPage() {
   return `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#151730"><title>Vezérlőpult</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">${FONTS}<style>${STYLE}</style></head><body><main><p class="dim">…</p></main><script>${SCRIPT}</script></body></html>`;
+<meta name="theme-color" content="#151730"><title>Vezérlőpult</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">${FONTS}<style>${STYLE}</style></head><body><main><p class="dim">…</p></main><script>${BG_SCRIPT}</script><script>${SCRIPT}</script></body></html>`;
 }
 
 module.exports = { loginPage, appPage };

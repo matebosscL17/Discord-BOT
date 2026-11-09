@@ -1,6 +1,6 @@
 {
   "name": "discord-bot",
-  "version": "2.14.0",
+  "version": "2.15.0",
   "description": "Moduláris Discord bot: ticket, changelog, játékrangok, moderáció, üdvözlés",
   "main": "index.js",
   "scripts": {

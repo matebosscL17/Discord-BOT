@@ -5,6 +5,25 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.15.0',
+    cim: 'Animált háttér a vezérlőpulton',
+    privatValtozasok: [
+      '+ Animált éjszakai háttér: pislákoló csillagok, hold, hullócsillag és egy város, ahol lassan fel-le kapcsolnak az ablakok',
+      '+ Görgetéskor a város finoman elmozdul, a panelek áttetszők lettek',
+      '+ A belépőoldal is megkapta az új hátteret',
+      '! Telefonkímélő: háttérbe tett lapon megáll, és ha a telefonon be van kapcsolva a „kevesebb animáció”, álló képet mutat',
+    ],
+    en: {
+      cim: 'Animated dashboard background',
+      privatValtozasok: [
+        '+ Animated night background: twinkling stars, moon, shooting stars and a city whose windows slowly switch on and off',
+        '+ The city moves gently when you scroll, and the panels became see-through',
+        '+ The login page got the new background too',
+        '! Battery friendly: it stops on a hidden tab, and shows a still image when "reduce motion" is on',
+      ],
+    },
+  },
+  {
     verzio: '2.14.0',
     cim: 'Vezérlőpult: bejelentés, tagkereső, grafikonok',
     privatValtozasok: [
