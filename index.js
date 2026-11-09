@@ -61,6 +61,12 @@ client.once(Events.ClientReady, async (readyClient) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  // Automatikus kiegészítés (gépelés közbeni javaslatok): "<parancs>:autocomplete" kezelő.
+  if (interaction.isAutocomplete?.()) {
+    const handler = handlers.get(`${interaction.commandName}:autocomplete`);
+    if (handler && interaction.inGuild()) await handler(interaction, [], context).catch(() => interaction.respond([]).catch(() => {}));
+    return;
+  }
   const id = interaction.isChatInputCommand() ? interaction.commandName : interaction.customId;
   if (!id || !interaction.inGuild()) return;
   const match = resolveHandler(id);
@@ -102,7 +108,11 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 client.login(config.token).catch((error) => {
   if (/disallowed intents/i.test(error.message)) {
     console.error('Be kell kapcsolni egy intentet a Discord fejlesztői oldalán, a Bot fülön: '
-      + 'SERVER MEMBERS INTENT (üdvözléshez, alaprangnál) vagy MESSAGE CONTENT INTENT (ticket mentéshez).');
+      + 'SERVER MEMBERS INTENT (védelem, meghívások, üdvözlés), PRESENCE INTENT (Most játszik panel) '
+      + 'vagy MESSAGE CONTENT INTENT (ticket mentéshez).');
+    // Ha be van kapcsolva a vezérlőpult, az tovább fut, így ott ki lehet kapcsolni a funkciót.
+    const dashboard = modules.find((module) => module.file === 'dashboard.js');
+    if (dashboard?.rescue?.(client, 'intents')) return;
   } else if (error.code === 'TokenInvalid') {
     console.error('Rossz a token. Kérj újat a Reset Token gombbal, és írd be újra.');
   } else {

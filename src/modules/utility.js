@@ -60,12 +60,14 @@ const GROUP_NAMES = {
     'suggestions.js': '💡 Javaslatdoboz', 'roles.js': '🏷️ Rangok', 'changelog.js': '📢 Bejelentések',
     'moderation.js': '🛡️ Moderáció', 'owner.js': '👑 Tulaj', 'utility.js': '🔧 Egyéb',
     'security.js': '🛡️ Védelem', 'bump.js': '🚀 Bump', 'invites.js': '📨 Meghívások', 'partners.js': '🤝 Partnerek',
+    'customcommands.js': '⌨️ Egyedi parancsok',
   },
   en: {
     'tickets.js': '🎫 Tickets', 'lfg.js': '🎮 Group finder', 'voice.js': '🔊 Voice rooms', 'clips.js': '🎬 Clip wall',
     'suggestions.js': '💡 Suggestion box', 'roles.js': '🏷️ Roles', 'changelog.js': '📢 Announcements',
     'moderation.js': '🛡️ Moderation', 'owner.js': '👑 Owner', 'utility.js': '🔧 Other',
     'security.js': '🛡️ Protection', 'bump.js': '🚀 Bump', 'invites.js': '📨 Invites', 'partners.js': '🤝 Partners',
+    'customcommands.js': '⌨️ Custom commands',
   },
 };
 

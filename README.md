@@ -34,6 +34,7 @@ Ha `'en'`-re váltasz, a `settings.js` szövegeinek (kategóriák, kérdések, p
 | `/partner-panel`, `/partner-remove` (`/partner-torles`) | Partnerkérelem panel és partner törlése | Szerver kezelése jog |
 | `/partners` (`/partnerek`) | Partnerszerverek listája | Mindenki |
 | `/bumps` (`/bumpok`) | Bump ranglista és a következő bump ideje | Mindenki |
+| `/info` | A szerver saját parancsai (pl. `/info ip`), amiket a vezérlőpulton hozol létre | Mindenki |
 | `/security` (`/vedelem`) | Védelem állapota, megbízható lista, raid mód, zárolás | Tulajok és megbízhatók |
 | `/createcategory`, `/createchannel` | Kategória csatornákkal, csatorna leírással és lassított móddal | Csak tulajok |
 | `/help`, `/ping`, `/serverinfo` (`/szerverinfo`), `/userinfo` (`/taginfo`) | Kategorizált súgó és adatok | Mindenki |
@@ -103,6 +104,7 @@ A `.env` fájlt soha ne töltsd fel GitHubra.
 A fejlesztői oldal **Bot** fülén a **Privileged Gateway Intents** résznél kapcsold be:
 - **SERVER MEMBERS INTENT**, ha használod a `WELCOME_CHANNEL_ID` vagy `AUTO_ROLE_ID` beállítást.
 - **MESSAGE CONTENT INTENT**, ha `ENABLE_TRANSCRIPT=true`.
+- **PRESENCE INTENT**, ha bekapcsolod a Most játszik panelt.
 
 Ha ezek nélkül indítod, a bot leáll, és kiírja, mit kell bekapcsolnod.
 
@@ -241,6 +243,48 @@ Frissítés: `npm run update`
 A telefon vagy a Termux újraindítása után: `termux-wake-lock`, majd `pm2 resurrect`.
 
 Mellette ne használd az `npm start` parancsot, mert akkor két példány futna.
+
+## Webes vezérlőpult
+
+A beállításokat a telefon böngészőjéből is módosíthatod, a `settings.js` szerkesztése nélkül.
+
+1. Írd be a `.env` fájlba: `DASHBOARD_PASSWORD=valami_eros_jelszo` (legalább 8 karakter).
+2. Indítsd újra a botot: `pm2 restart discord-bot`.
+3. Nyisd meg a telefon böngészőjében: `http://localhost:3000`, és lépj be a jelszóval.
+
+A módosítások a `data/settings-override.json` fájlba kerülnek, és felülírják a `settings.js` értékeit. A **Mentés és újraindítás** gomb után a PM2 pár másodperc alatt újraindítja a botot.
+
+Az egyedi parancsok és az időzített üzenetek mentés után azonnal élnek, újraindítás nélkül.
+
+Alapból csak a telefonról érhető el. Ha a gépedről is el akarod érni ugyanazon a wifin, írd be: `DASHBOARD_HOST=0.0.0.0`, és a címben a telefon IP-címét használd. Ilyenkor válassz erős jelszót, és ne nyisd meg a portot az internet felé.
+
+## Most játszik panel
+
+Egy üzenet a megadott csatornában, ami mutatja, ki játszik éppen a szerver játékaival. A játékok nevét és a felismert szavakat a `settings.js` fájl `nowPlaying.games` részében állíthatod.
+
+Bekapcsolás:
+1. A Discord fejlesztői oldalán a **Bot** fülön kapcsold be a **PRESENCE INTENT**-et.
+2. A vezérlőpulton (vagy a `settings.js`-ben) kapcsold be a panelt, és válassz egy meglévő csatornát.
+
+A panel legfeljebb percenként frissül. A **Csatlakoznék** gombbal a tagok egy kattintással szólhatnak a játszóknak. Ugyanarra a játékra 5 percenként lehet jelentkezni.
+
+A bot csak azokat látja, akiknél a Discordban be van kapcsolva a tevékenység megjelenítése.
+
+## Egyedi parancsok
+
+A vezérlőpult **Egyedi parancsok** fülén hozhatsz létre válaszokat, például `ip` → `play.szerverem.hu`. A tagok így használják: `/info ip`. Gépelés közben a bot javasolja a létező neveket. A **Csak a kérdező lássa** beállítással a válasz csak a kérdezőnek jelenik meg.
+
+## Időzített üzenetek
+
+A vezérlőpult **Időzített üzenetek** fülén megadhatod a csatornát, a napokat, az időpontot (budapesti idő), a szöveget és egy ping rangot. Ha a bot pont akkor indul újra, 10 percen belül még pótolja az üzenetet.
+
+## Számláló csatornák
+
+Olyan csatornák, amelyek neve magától frissül, például `👥 Tagok: 152`. A csatornát neked kell létrehoznod (hangcsatorna ajánlott, hogy senki ne írjon bele), a bot csak átnevezi. A vezérlőpult **Most játszik és számlálók** fülén add meg a csatornát és a nevet.
+
+Helyettesítők: `{members}` összes tag, `{humans}` emberek, `{bots}` botok, `{boosts}` boostok, `{online}` online tagok, `{playing}` a szerver játékaival játszók. Az utolsó kettőhöz PRESENCE INTENT és bekapcsolt Most játszik panel kell.
+
+A Discord csatornánként 10 percenként csak kétszer enged átnevezni, ezért a bot 10 percenként frissít.
 
 ## Testreszabás
 

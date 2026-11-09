@@ -246,4 +246,29 @@ module.exports = {
   goodbyeMessage: true,
   welcomeMessage: 'Üdv a szerveren, {user}! Örülünk, hogy itt vagy. 🎉',
   welcomeMessageEn: 'Welcome to the server, {user}! Glad to have you here. 🎉',
+
+  // ===== Most játszik panel =====
+  // FONTOS: bekapcsolás előtt a Discord fejlesztői oldalán (Bot fül) kapcsold be a PRESENCE INTENT-et,
+  // különben a bot nem indul el. A vezérlőpulton is be- és kikapcsolható.
+  nowPlaying: {
+    enabled: false,
+    channelId: '',
+    // A játék neve a Discord-tevékenységben (kisbetű, részlet is elég)
+    games: [
+      { id: 'cs2', label: 'CS2', emoji: '🔫', match: ['counter-strike 2', 'cs2'] },
+      { id: 'valorant', label: 'Valorant', emoji: '🎯', match: ['valorant'] },
+      { id: 'minecraft', label: 'Minecraft', emoji: '⛏️', match: ['minecraft', 'lunar client'] },
+      { id: 'gta', label: 'GTA V', emoji: '🚗', match: ['grand theft auto', 'fivem', 'gta'] },
+      { id: 'roblox', label: 'Roblox', emoji: '🧱', match: ['roblox'] },
+    ],
+  },
+
+  // ===== Számláló csatornák =====
+  // Csatornák, amelyek neve magától frissül. Helyettesítők: {members} {humans} {bots} {online} {boosts} {playing}
+  // Az {online} és {playing} csak bekapcsolt Most játszik panellel (PRESENCE INTENT) működik.
+  // Pl. { channelId: '123...', template: '👥 Tagok: {members}' }
+  counters: [],
 };
+
+// A webes vezérlőpult módosításai felülírják a fenti értékeket (data/settings-override.json).
+module.exports = require('./src/overrides').apply(module.exports);

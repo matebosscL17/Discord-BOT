@@ -5,6 +5,37 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.12.0',
+    cim: 'Vezérlőpult, Most játszik panel és új extrák',
+    valtozasok: [
+      '+ Most játszik panel: egy üzenet mutatja, ki játszik éppen CS2-t, Valorantot, Minecraftot, GTA V-öt vagy Robloxot',
+      '+ "Csatlakoznék" gomb a panelen: egy kattintással szólhatsz a játszóknak, hogy beszállnál',
+      '+ /info: a szerver saját parancsai (pl. /info ip), gépelés közben a bot javasol',
+      '+ Időzített üzenetek: a bot a megadott napokon és időben magától kiírja a bejelentéseket',
+      '+ Számláló csatornák: a csatorna neve magától mutatja a taglétszámot, az online tagokat vagy a játszókat',
+    ],
+    privatValtozasok: [
+      '+ Webes vezérlőpult: a beállítások a telefon böngészőjéből kattintással módosíthatók (.env: DASHBOARD_PASSWORD)',
+      '+ Az egyedi parancsokat és az időzített üzeneteket a vezérlőpulton lehet létrehozni, újraindítás nélkül élnek',
+      '! A Most játszik panelhez a Discord fejlesztői oldalán be kell kapcsolni a PRESENCE INTENT-et',
+    ],
+    en: {
+      cim: 'Dashboard, now playing panel and new extras',
+      valtozasok: [
+        '+ Now playing panel: one message shows who is playing CS2, Valorant, Minecraft, GTA V or Roblox right now',
+        '+ "I would join" button on the panel: let the players know with one click that you want in',
+        '+ /info: the server\'s own commands (e.g. /info ip), the bot suggests while you type',
+        '+ Scheduled messages: the bot posts announcements by itself on the chosen days and times',
+        '+ Counter channels: the channel name shows the member count, online members or players by itself',
+      ],
+      privatValtozasok: [
+        '+ Web dashboard: change the settings with clicks from your phone browser (.env: DASHBOARD_PASSWORD)',
+        '+ Custom commands and scheduled messages are created on the dashboard and work without a restart',
+        '! The now playing panel needs PRESENCE INTENT turned on in the Discord developer portal',
+      ],
+    },
+  },
+  {
     verzio: '2.11.0',
     cim: 'Meghívás-követő és partnerrendszer',
     valtozasok: [
