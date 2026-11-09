@@ -37,6 +37,8 @@ const client = new Client({
   intents: [...intents],
   presence: { activities: [{ name: settings.status, type: ActivityType.Watching }] },
 });
+// Sok modul figyeli ugyanazt az eseményt (pl. indulás), ez nem hiba: így nem ír felesleges figyelmeztetést.
+client.setMaxListeners?.(50);
 const context = { commands, commandGroups };
 
 // "ticket:open:hiba" esetén a "ticket:open" kezelő fut, és a "hiba" paraméterként érkezik.

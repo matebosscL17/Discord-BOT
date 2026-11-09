@@ -5,6 +5,19 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.12.1',
+    cim: 'Tisztább napló',
+    privatValtozasok: [
+      '- Eltűnt a felesleges "MaxListenersExceededWarning" figyelmeztetés a naplóból',
+    ],
+    en: {
+      cim: 'Cleaner log',
+      privatValtozasok: [
+        '- Removed the needless "MaxListenersExceededWarning" from the log',
+      ],
+    },
+  },
+  {
     verzio: '2.12.0',
     cim: 'Vezérlőpult, Most játszik panel és új extrák',
     valtozasok: [
