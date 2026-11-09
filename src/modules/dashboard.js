@@ -1,6 +1,10 @@
+const fs = require('node:fs');
 const http = require('node:http');
+const nodePath = require('node:path');
 const crypto = require('node:crypto');
-const { ChannelType, Events, GatewayIntentBits } = require('discord.js');
+const {
+  ChannelType, EmbedBuilder, Events, GatewayIntentBits,
+} = require('discord.js');
 const config = require('../config');
 const settings = require('../../settings');
 const overrides = require('../overrides');
@@ -10,7 +14,7 @@ const customCommands = require('./customcommands');
 const schedules = require('./schedules');
 const nowPlaying = require('./nowplaying');
 const ticketStats = require('../ticketStats');
-const { readJson } = require('../store');
+const { readJson, writeJson } = require('../store');
 const { version } = require('../../package.json');
 
 // Webes vezérlőpult. Bekapcsolás: a .env fájlba (vagy a hosting panelre) írd be a DASHBOARD_PASSWORD sort.
@@ -25,6 +29,22 @@ const MAX_ATTEMPTS = 5;
 const ATTEMPT_WINDOW_MS = 5 * 60000;
 
 const LOG_LINES = 300;
+const HISTORY_DAYS = 120;
+const SNOWFLAKE = /^\d{15,22}$/;
+const ANNOUNCE_COLORS = { amber: 0xf5b947, violet: 0x9d8cff, green: 0x52c98e, red: 0xf06a78, blue: 0x5865f2 };
+// Ikonok a "Hozzáadás a kezdőképernyőhöz" funkcióhoz.
+const ICONS = Object.fromEntries(['icon-192.png', 'icon-512.png'].map((name) => {
+  try {
+    return [name, fs.readFileSync(nodePath.join(__dirname, '..', 'dashboard', name))];
+  } catch {
+    return [name, null];
+  }
+}));
+const MANIFEST = JSON.stringify({
+  name: 'Bot vezérlőpult', short_name: 'Vezérlőpult', start_url: '/', display: 'standalone',
+  background_color: '#151730', theme_color: '#151730',
+  icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }],
+});
 const DAY_MS = 24 * 3600000;
 
 // A bot naplójának utolsó sorai, hogy a vezérlőpulton is látszódjanak (ne kelljen a Termuxban keresgélni).
@@ -145,6 +165,18 @@ async function liveStats(client) {
   const bump = readJson('bump', { nextAt: 0, total: 0, lastUserId: null });
   const invites = readJson('invites', { inviters: {} });
   const security = readJson('security', { lockdown: null });
+  const history = readJson('history', {});
+  const ticketEvents = readJson('ticket-stats', { events: [] }).events;
+  const ticketDays = [];
+  for (let i = 13; i >= 0; i -= 1) {
+    const date = dayKey(Date.now() - i * DAY_MS);
+    ticketDays.push({ date, count: 0 });
+  }
+  for (const event of ticketEvents) {
+    if (event.type !== 'open' || event.time < Date.now() - 15 * DAY_MS) continue;
+    const day = ticketDays.find((item) => item.date === dayKey(event.time));
+    if (day) day.count += 1;
+  }
 
   return {
     version,
@@ -179,7 +211,120 @@ async function liveStats(client) {
       .map(([id, item]) => ({ name: nameOf(id) ?? id, count: Math.max(0, (item.regular ?? 0) - (item.left ?? 0) - (item.fake ?? 0)) }))
       .filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3),
     lockdown: Boolean(security.lockdown),
+    history: Object.entries(history).sort(([a], [b]) => a.localeCompare(b)).slice(-30)
+      .map(([date, item]) => ({ date, members: item.members, online: item.online ?? null })),
+    ticketDays,
   };
+}
+
+// ---- Napi taglétszám-napló a grafikonokhoz ----
+const dayKey = (time) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Budapest' }).format(new Date(time));
+
+async function recordHistory(client) {
+  const guild = await client.guilds.fetch(config.guildId).catch(() => null);
+  if (!guild) return;
+  const presenceOn = Boolean(client.options?.intents?.has?.(GatewayIntentBits.GuildPresences));
+  const online = presenceOn ? [...(guild.presences?.cache?.values?.() ?? [])].filter((p) => !p.user?.bot && p.status && p.status !== 'offline').length : null;
+  const data = readJson('history', {});
+  const today = dayKey(Date.now());
+  const old = data[today] ?? {};
+  data[today] = { members: guild.memberCount ?? old.members ?? 0, online: online === null ? old.online ?? null : Math.max(online, old.online ?? 0) };
+  const keys = Object.keys(data).sort();
+  for (const key of keys.slice(0, Math.max(0, keys.length - HISTORY_DAYS))) delete data[key];
+  writeJson('history', data);
+}
+
+function startHistory(client) {
+  const run = () => recordHistory(client).catch(() => {});
+  run();
+  setInterval(run, 30 * 60000).unref?.();
+}
+
+// ---- Tagkereső ----
+async function searchMembers(client, query) {
+  const guild = await client.guilds.fetch(config.guildId).catch(() => null);
+  if (!guild || !query) return [];
+  const found = SNOWFLAKE.test(query)
+    ? [await guild.members.fetch(query).catch(() => null)].filter(Boolean)
+    : [...(await guild.members.search({ query, limit: 10 }).catch(() => new Map())).values()];
+  return found.map((member) => ({
+    id: member.id, name: member.displayName, username: member.user?.username, avatar: member.displayAvatarURL?.({ size: 64 }) ?? null,
+  }));
+}
+
+async function memberDetails(client, id) {
+  if (!SNOWFLAKE.test(id ?? '')) return null;
+  const guild = await client.guilds.fetch(config.guildId).catch(() => null);
+  const member = guild ? await guild.members.fetch(id).catch(() => null) : null;
+  const user = member?.user ?? await client.users.fetch(id).catch(() => null);
+  if (!user) return null;
+  const nameOf = (userId) => guild?.members?.cache?.get(userId)?.displayName ?? client.users?.cache?.get(userId)?.username ?? userId;
+  const cases = readJson('mod-cases', { cases: [] }).cases.filter((item) => item.userId === id);
+  const invites = readJson('invites', { members: {}, inviters: {} });
+  const own = invites.inviters?.[id];
+  const joinedVia = invites.members?.[id];
+  return {
+    id,
+    name: member?.displayName ?? user.globalName ?? user.username,
+    username: user.username,
+    bot: Boolean(user.bot),
+    avatar: (member ?? user).displayAvatarURL?.({ size: 128 }) ?? null,
+    inServer: Boolean(member),
+    createdAt: user.createdTimestamp ?? null,
+    joinedAt: member?.joinedTimestamp ?? null,
+    timeoutUntil: member?.communicationDisabledUntilTimestamp > Date.now() ? member.communicationDisabledUntilTimestamp : null,
+    roles: member ? [...member.roles.cache.values()].filter((role) => role.id !== guild.id).sort((a, b) => b.position - a.position)
+      .map((role) => ({ name: role.name, color: role.hexColor ?? '#99aab5' })) : [],
+    warnings: cases.filter((item) => item.type === 'warn' && !item.cleared).length,
+    cases: cases.slice(-10).reverse().map((item) => ({
+      id: item.id, type: item.type, time: item.time, reason: item.reason ?? '', mod: item.modId ? nameOf(item.modId) : null,
+    })),
+    invited: own ? Math.max(0, (own.regular ?? 0) - (own.left ?? 0) - (own.fake ?? 0)) : 0,
+    invitedBy: joinedVia?.inviterId ? nameOf(joinedVia.inviterId) : null,
+  };
+}
+
+// ---- Bejelentés ----
+async function announce(client, body) {
+  const text = String(body.text ?? '').trim().slice(0, 4000);
+  const title = String(body.title ?? '').trim().slice(0, 256);
+  const pingRoleId = SNOWFLAKE.test(String(body.pingRoleId)) ? String(body.pingRoleId) : '';
+  if (!text || !SNOWFLAKE.test(String(body.channelId))) return 'invalid';
+  const channel = await client.channels.fetch(String(body.channelId)).catch(() => null);
+  if (!channel || channel.guildId !== config.guildId || typeof channel.send !== 'function') return 'channel';
+  const embed = new EmbedBuilder().setColor(ANNOUNCE_COLORS[body.color] ?? ANNOUNCE_COLORS.amber).setDescription(text);
+  if (title) embed.setTitle(title);
+  await channel.send({ content: pingRoleId ? `<@&${pingRoleId}>` : undefined, embeds: [embed], allowedMentions: { roles: pingRoleId ? [pingRoleId] : [] } });
+  console.log(`Vezérlőpult: bejelentés elküldve (#${channel.name ?? channel.id}).`);
+  return null;
+}
+
+// ---- Biztonsági mentés ----
+function backup() {
+  return {
+    app: 'discord-bot-dashboard', version, created: new Date().toISOString(),
+    settings: overrides.readOverrides(), commands: customCommands.load(), schedules: schedules.load(),
+  };
+}
+
+function restore(data) {
+  if (!data || data.app !== 'discord-bot-dashboard') return null;
+  const values = {};
+  for (const field of schema.fields) {
+    const value = overrides.getValue(data.settings ?? {}, field.path);
+    if (value === undefined) continue;
+    const cleaned = schema.validate(field, value);
+    if (cleaned !== null) values[field.path] = cleaned;
+  }
+  const commands = customCommands.validateList(data.commands) ?? [];
+  const scheduleList = schedules.validateList(data.schedules) ?? [];
+  if (Object.keys(values).length) {
+    overrides.setValues(values);
+    savedSinceStart = true;
+  }
+  if (Array.isArray(data.commands)) customCommands.save(commands);
+  if (Array.isArray(data.schedules)) schedules.save(scheduleList);
+  return { settings: Object.keys(values).length, commands: commands.length, schedules: scheduleList.length };
 }
 
 // A rangokat a settings.js-ben névvel is meg lehet adni (pl. 'Founder'): a vezérlőpult ezeket azonosítóra váltja.
@@ -194,7 +339,7 @@ function resolveRoleNames(values, roles) {
   return values;
 }
 
-async function handleApi(req, res, client, path) {
+async function handleApi(req, res, client, path, url) {
   if (req.method === 'GET' && path === '/api/meta') {
     const guild = await guildData(client);
     return json(res, 200, {
@@ -211,6 +356,16 @@ async function handleApi(req, res, client, path) {
   }
   if (req.method === 'GET' && path === '/api/stats') return json(res, 200, await liveStats(client));
   if (req.method === 'GET' && path === '/api/logs') return json(res, 200, { lines: logs });
+  if (req.method === 'GET' && path === '/api/members') return json(res, 200, { list: await searchMembers(client, url.searchParams.get('q')?.trim().slice(0, 50)) });
+  if (req.method === 'GET' && path === '/api/member') {
+    const details = await memberDetails(client, url.searchParams.get('id'));
+    return details ? json(res, 200, details) : json(res, 404, { error: 'not found' });
+  }
+  if (req.method === 'GET' && path === '/api/backup') {
+    return send(res, 200, JSON.stringify(backup(), null, 2), 'application/json; charset=utf-8', {
+      'Content-Disposition': `attachment; filename="bot-mentes-${dayKey(Date.now())}.json"`,
+    });
+  }
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
   // Egyszerű védelem a más oldalakról érkező kérések ellen.
   if (req.headers['x-dashboard'] !== '1') return json(res, 403, { error: 'forbidden' });
@@ -263,6 +418,14 @@ async function handleApi(req, res, client, path) {
     }
     return json(res, 200, { ok: true });
   }
+  if (path === '/api/announce') {
+    const error = await announce(client, body).catch(() => 'send');
+    return error ? json(res, 400, { error }) : json(res, 200, { ok: true });
+  }
+  if (path === '/api/restore') {
+    const result = restore(body.data);
+    return result ? json(res, 200, { ok: true, ...result }) : json(res, 400, { error: 'invalid' });
+  }
   if (path === '/api/restart') {
     json(res, 200, { ok: true });
     setTimeout(() => process.exit(0), 800).unref?.();
@@ -278,6 +441,9 @@ function createServer(client) {
       const path = url.pathname;
       const ip = req.socket.remoteAddress ?? '?';
 
+      // A telepíthető alkalmazás fájljai (nincs bennük titok, belépés nélkül is elérhetők).
+      if (path === '/manifest.webmanifest') return send(res, 200, MANIFEST, 'application/manifest+json');
+      if (ICONS[path.slice(1)]) return send(res, 200, ICONS[path.slice(1)], 'image/png', { 'Cache-Control': 'public, max-age=86400' });
       if (path === '/login' && req.method === 'POST') {
         if (tooManyAttempts(ip)) return send(res, 429, loginPage('wait'));
         const form = new URLSearchParams(await readBody(req));
@@ -300,7 +466,7 @@ function createServer(client) {
         if (path.startsWith('/api/')) return json(res, 401, { error: 'login' });
         return send(res, 200, loginPage());
       }
-      if (path.startsWith('/api/')) return await handleApi(req, res, client, path);
+      if (path.startsWith('/api/')) return await handleApi(req, res, client, path, url);
       if (path === '/' && req.method === 'GET') return send(res, 200, appPage());
       return send(res, 404, 'Not found', 'text/plain');
     } catch (error) {
@@ -340,7 +506,14 @@ function rescue(client, reason) {
 }
 
 module.exports = {
-  events: { [Events.ClientReady]: start },
+  events: {
+    [Events.ClientReady]: (client) => {
+      startHistory(client);
+      start(client);
+    },
+  },
   rescue,
-  _internal: { createServer, sessions },
+  _internal: {
+    createServer, sessions, recordHistory, restore, backup, dayKey,
+  },
 };

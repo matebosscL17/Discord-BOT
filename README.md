@@ -261,6 +261,12 @@ Mit találsz rajta:
 - **Beállítások**: a menüben kereshetsz is, például „raid” vagy „csatorna”. A módosított mezők mellett sárga csík jelzi a változást, a **Visszaállítás** visszaadja a régi értéket.
 - **Egyedi parancsok** és **Időzített üzenetek**: Discord-szerű előnézettel. Az időzített üzenetet a **Küldés most** gombbal ki is próbálhatod.
 - **Napló**: a bot utolsó 300 üzenete és hibája, nem kell hozzá a Termux.
+- **Bejelentés**: üzenet a bot nevében bármelyik csatornába, színnel, ping ranggal és előnézettel.
+- **Tagok**: keress rá egy tagra, és látod, mióta tag, ki hívta meg, milyen rangjai, figyelmeztetései és moderációs előzményei vannak.
+- **Grafikonok** az áttekintésen: taglétszám az elmúlt 30 napban (a bot naponta feljegyzi) és új ticketek naponta.
+- **Biztonsági mentés**: a vezérlőpulton módosított beállítások, parancsok és időzített üzenetek letöltése és visszatöltése.
+
+Tipp: a böngésző menüjében a **Hozzáadás a kezdőképernyőhöz** ponttal a vezérlőpult alkalmazásként nyílik meg a telefonon.
 
 Alapból csak a telefonról érhető el. Ha a gépedről is el akarod érni ugyanazon a wifin, írd be: `DASHBOARD_HOST=0.0.0.0`, és a címben a telefon IP-címét használd. Ilyenkor válassz erős jelszót, és ne nyisd meg a portot az internet felé.
 

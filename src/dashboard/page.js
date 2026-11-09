@@ -177,6 +177,39 @@ input:focus,select:focus,textarea:focus{border-color:var(--neon);outline:none}
 .login .err{color:var(--bad);font-size:15px}
 .login svg{width:100%;max-width:340px;height:auto;margin-bottom:8px}
 
+/* Grafikonok */
+.chart{position:relative;margin-top:10px}
+.chart svg{display:block;width:100%;height:140px;overflow:visible}
+.chart .axis{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:6px}
+.chart .tip{position:absolute;top:-6px;transform:translate(-50%,-100%);background:var(--text);color:var(--night);font-size:13px;font-weight:600;border-radius:8px;padding:4px 8px;white-space:nowrap;pointer-events:none}
+.chart .knob{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--window);box-shadow:0 0 0 2px var(--floor);transform:translate(-50%,-50%);pointer-events:none}
+.bars{display:flex;align-items:flex-end;gap:2px;height:120px;border-bottom:1px solid var(--rail)}
+.bars button{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;background:none;border:0;padding:0;cursor:pointer}
+.bars button i{display:block;width:100%;background:var(--window);border-radius:4px 4px 0 0;min-height:2px}
+.bars button.zero i{background:var(--rail)}
+.bars button:hover i,.bars button:focus-visible i{background:#ffd27a}
+.trend{font-size:14px;color:var(--dim)}
+/* Tagkereső */
+.people{display:grid;gap:6px;margin-top:12px}
+.person{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--floor);border:1px solid var(--rail-soft);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--text)}
+.person:hover{border-color:var(--rail)}
+.person img,.person .pf{width:36px;height:36px;border-radius:50%;flex:none;background:var(--rail-soft);object-fit:cover}
+.person small{display:block;color:var(--dim)}
+.profile{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.profile img,.profile .pf{width:64px;height:64px;border-radius:50%;background:var(--rail-soft);object-fit:cover;flex:none}
+.profile h3{font-size:26px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.badge{font-size:12px;font-weight:700;border-radius:6px;padding:2px 8px;background:var(--rail-soft)}
+.badge.bad{background:rgba(240,106,120,.18);color:#ffb3bb}.badge.warn{background:rgba(245,185,71,.16);color:var(--window)}
+.facts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+.facts div{background:var(--glass);border-radius:12px;padding:10px 12px}.facts span{display:block;font-size:13px;color:var(--dim)}
+/* Bejelentés */
+.swatches{display:flex;gap:10px}
+.swatches label{width:36px;height:36px;border-radius:50%;cursor:pointer;border:2px solid transparent;display:grid;place-items:center}
+.swatches label.on{border-color:var(--text)}
+.swatches input{position:absolute;opacity:0;pointer-events:none}
+.swatches label:focus-within{outline:2px solid var(--window);outline-offset:2px}
+.file-btn{position:relative;overflow:hidden}.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 `;
 
@@ -200,7 +233,7 @@ function loginPage(error) {
   const message = error === 'wrong' ? 'Hibás jelszó. Próbáld újra. / Wrong password.'
     : error === 'wait' ? 'Túl sok próbálkozás. Várj 5 percet. / Too many attempts, wait 5 minutes.' : '';
   return `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#151730"><title>Vezérlőpult</title>${FONTS}<style>${STYLE}</style></head><body>
+<meta name="theme-color" content="#151730"><title>Vezérlőpult</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">${FONTS}<style>${STYLE}</style></head><body>
 <div class="login">${staticSkyline()}<form method="post" action="/login">
 <h1>Vezérlőpult</h1><p class="dim">Lépj be a .env fájlban megadott DASHBOARD_PASSWORD jelszóval.</p>
 <label class="sr" for="pw">Jelszó</label><input id="pw" type="password" name="password" placeholder="Jelszó / Password" autocomplete="current-password" required autofocus>
@@ -218,6 +251,24 @@ const T = {
   commands: ['Egyedi parancsok', 'Custom commands'], commandsSub: ['/info válaszok', '/info replies'],
   schedules: ['Időzített üzenetek', 'Scheduled messages'], schedulesSub: ['Bejelentések menetrend szerint', 'Announcements on a schedule'],
   logs: ['Napló', 'Log'], logsSub: ['Mit csinált a bot', 'What the bot did'],
+  announce: ['Bejelentés', 'Announcement'], announceSub: ['Üzenet a bot nevében', 'A message from the bot'],
+  annIntro: ['A bot a kiválasztott csatornába küldi az üzenetet. A **félkövér** és a *dőlt* jelölés is működik.', 'The bot posts the message to the selected channel. **Bold** and *italic* both work.'],
+  annChannel: ['Csatorna', 'Channel'], annTitle: ['Cím (nem kötelező)', 'Title (optional)'], annText: ['Üzenet', 'Message'], annColor: ['Szín', 'Color'],
+  annSend: ['Bejelentés küldése', 'Send announcement'], annSent: ['Bejelentés elküldve', 'Announcement sent'], annMissing: ['Válassz csatornát, és írj üzenetet.', 'Pick a channel and write a message.'],
+  members2: ['Tagok', 'Members'], membersSub: ['Keresés és adatlap', 'Search and profile'],
+  memIntro: ['Írd be egy tag nevét vagy azonosítóját.', 'Type a member name or ID.'], memSearch: ['Név vagy azonosító', 'Name or ID'],
+  memNone: ['Nincs találat. Próbáld a név elejével.', 'No match. Try the start of the name.'], memBack: ['Vissza a kereséshez', 'Back to search'],
+  joined: ['Csatlakozott', 'Joined'], account: ['Fiók kora', 'Account age'], invitedBy: ['Meghívta', 'Invited by'], invitedCount: ['Meghívott', 'Invited'],
+  warnings: ['Aktív figyelmeztetés', 'Active warnings'], notInServer: ['Nincs a szerveren', 'Not in the server'], timeout: ['Némítva', 'Timed out'], ago: ['{t} óta', '{t} ago'],
+  roles: ['Rangok', 'Roles'], noRoles: ['Nincs rangja.', 'No roles.'], history2: ['Moderációs előzmények', 'Moderation history'], clean: ['Tiszta lap, még nem volt moderálva.', 'Clean record, never moderated.'], unknown: ['ismeretlen', 'unknown'],
+  backup: ['Biztonsági mentés', 'Backup'], backupSub: ['Letöltés és visszaállítás', 'Download and restore'],
+  backupIntro: ['A mentés a vezérlőpulton módosított beállításokat, az egyedi parancsokat és az időzített üzeneteket tartalmazza. Tokent és jelszót nem.', 'The backup holds the settings changed on the dashboard, the custom commands and the scheduled messages. No token or password.'],
+  download: ['Mentés letöltése', 'Download backup'], restoreFile: ['Visszaállítás fájlból', 'Restore from file'],
+  restored: ['Visszaállítva: {s} beállítás, {c} parancs, {m} időzített üzenet. A beállítások újraindítás után élnek.', 'Restored: {s} settings, {c} commands, {m} scheduled messages. Settings apply after a restart.'],
+  badFile: ['Ez nem a vezérlőpult mentésfájlja.', 'This is not a dashboard backup file.'],
+  install: ['Tedd a kezdőképernyőre: a böngésző menüjében válaszd a „Hozzáadás a kezdőképernyőhöz” pontot, és alkalmazásként nyílik meg.', 'Add it to your home screen: in the browser menu pick "Add to Home screen" and it opens like an app.'],
+  memberChart: ['Taglétszám', 'Members'], memberChartEmpty: ['A bot naponta feljegyzi a taglétszámot. Pár nap múlva itt látod, hogyan nő a szerver.', 'The bot notes the member count every day. In a few days you will see the server grow here.'],
+  change30: ['{d} az elmúlt {n} napban', '{d} in the last {n} days'], ticketChart: ['Új ticketek naponta', 'New tickets per day'], ticketsOn: ['{d}: {n} ticket', '{d}: {n} tickets'],
   search: ['Keresés a beállítások között', 'Search settings'], noResults: ['Nincs ilyen beállítás.', 'No setting matches.'],
   logout: ['Kijelentkezés', 'Log out'], restart: ['Bot újraindítása', 'Restart bot'], lang: ['English', 'Magyar'],
   botOn: ['A bot fut', 'The bot is running'], botOff: ['A bot most nem fut', 'The bot is not running'],
@@ -348,7 +399,7 @@ function richText(text) {
   if (last < text.length) out.push(text.slice(last));
   return out;
 }
-function preview({ title, text, pingRoleId }) {
+function preview({ title, text, pingRoleId, color }) {
   const box = h('div', { class: 'preview' });
   const draw = (data) => {
     const role = data.pingRoleId && META.guild.roles.find((r) => r.id === data.pingRoleId);
@@ -357,9 +408,9 @@ function preview({ title, text, pingRoleId }) {
       h('div', { style: 'min-width:0;flex:1' },
         h('div', {}, h('span', { class: 'name' }, (META.bot.tag || 'Bot').split('#')[0]), h('span', { class: 'tag' }, 'BOT')),
         role ? h('div', { class: 'ping' }, h('span', { class: 'mention' }, '@' + role.name)) : null,
-        h('div', { class: 'embed' }, data.title ? h('b', { class: 't' }, data.title) : null, richText(data.text || '…'))));
+        h('div', { class: 'embed', style: data.color ? 'border-left-color:' + data.color : null }, data.title ? h('b', { class: 't' }, data.title) : null, richText(data.text || '…'))));
   };
-  draw({ title, text, pingRoleId });
+  draw({ title, text, pingRoleId, color });
   return { el: h('div', {}, h('div', { class: 'preview-label' }, t('preview')), box), update: draw };
 }
 
@@ -528,8 +579,170 @@ function overview() {
   const invitePanel = h('div', { class: 'panel pad' }, h('h3', {}, t('invites')),
     st.invites.length ? h('ul', { class: 'list' }, st.invites.map((x, i) => h('li', {}, medals[i], x.name, h('span', { class: 'dim' }, String(x.count)))))
       : h('p', { class: 'hint' }, t('noInvites')));
+  parts.push(h('div', { class: 'duo', style: 'margin-bottom:14px' }, memberTrend(st.history), ticketTrend(st.ticketDays)));
   parts.push(h('div', { class: 'duo' }, ticketPanel, bumpPanel, modPanel, invitePanel));
   return h('div', {}, parts);
+}
+
+// ---- Grafikonok ----
+const dateFmt = () => new Intl.DateTimeFormat(LANG ? 'en-GB' : 'hu-HU', { month: 'short', day: 'numeric' });
+const shortDate = (key) => dateFmt().format(new Date(key + 'T12:00:00'));
+
+function memberTrend(history) {
+  const points = (history || []).filter((p) => typeof p.members === 'number');
+  const panel = h('div', { class: 'panel pad' }, h('h3', {}, t('memberChart')));
+  if (points.length < 2) { panel.append(h('p', { class: 'hint' }, t('memberChartEmpty'))); return panel; }
+  const diff = points[points.length - 1].members - points[0].members;
+  panel.append(h('p', { class: 'trend' }, t('change30', { d: (diff > 0 ? '+' : '') + diff, n: points.length - 1 })));
+  const W = 300; const H = 140; const pad = 8;
+  const values = points.map((p) => p.members);
+  let min = Math.min(...values); let max = Math.max(...values);
+  if (min === max) { min -= 1; max += 1; }
+  const x = (i) => (i / (points.length - 1)) * W;
+  const y = (v) => pad + (1 - (v - min) / (max - min)) * (H - pad * 2);
+  const line = points.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.members).toFixed(1)).join(' ');
+  const svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, preserveAspectRatio: 'none', role: 'img', 'aria-label': t('memberChart') });
+  svg.append(s('line', { x1: 0, x2: W, y1: H, y2: H, stroke: '#343a6e', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+  svg.append(s('path', { d: line, fill: 'none', stroke: '#f5b947', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke', 'stroke-linejoin': 'round' }));
+  const cross = s('line', { y1: 0, y2: H, stroke: '#a3a1c6', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke', opacity: 0 });
+  svg.append(cross);
+  const knob = h('div', { class: 'knob', hidden: true });
+  const tip = h('div', { class: 'tip', hidden: true });
+  const wrap = h('div', { class: 'chart' }, svg, knob, tip, h('div', { class: 'axis' }, h('span', {}, shortDate(points[0].date) + ': ' + values[0]), h('span', {}, shortDate(points[points.length - 1].date) + ': ' + values[values.length - 1])));
+  const show = (clientX) => {
+    const box = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(points.length - 1, Math.round(((clientX - box.left) / box.width) * (points.length - 1))));
+    const px = (x(i) / W) * box.width; const py = (y(points[i].members) / H) * box.height;
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', 0.6);
+    knob.hidden = false; knob.style.left = px + 'px'; knob.style.top = py + 'px';
+    tip.hidden = false; tip.style.left = Math.max(40, Math.min(box.width - 40, px)) + 'px'; tip.style.top = py - 8 + 'px';
+    tip.textContent = shortDate(points[i].date) + ': ' + points[i].members + ' ' + t('members');
+  };
+  const hide = () => { knob.hidden = true; tip.hidden = true; cross.setAttribute('opacity', 0); };
+  svg.addEventListener('pointermove', (e) => show(e.clientX));
+  svg.addEventListener('pointerdown', (e) => show(e.clientX));
+  svg.addEventListener('pointerleave', hide);
+  panel.append(wrap);
+  return panel;
+}
+
+function ticketTrend(days) {
+  const list = days || [];
+  const max = Math.max(1, ...list.map((d) => d.count));
+  const tip = h('div', { class: 'tip', hidden: true });
+  const bars = h('div', { class: 'bars', role: 'img', 'aria-label': t('ticketChart') });
+  list.forEach((d) => {
+    const label = t('ticketsOn', { d: shortDate(d.date), n: d.count });
+    const btn = h('button', { type: 'button', class: d.count ? '' : 'zero', 'aria-label': label }, h('i', { style: 'height:' + Math.max(2, (d.count / max) * 100) + '%' }));
+    const show = () => { const box = bars.getBoundingClientRect(); const b = btn.getBoundingClientRect(); tip.hidden = false; tip.textContent = label; tip.style.left = Math.max(60, Math.min(box.width - 60, b.left - box.left + b.width / 2)) + 'px'; tip.style.top = (b.bottom - box.top) - (d.count / max) * 120 - 8 + 'px'; };
+    btn.addEventListener('pointerenter', show); btn.addEventListener('focus', show); btn.addEventListener('click', show);
+    btn.addEventListener('pointerleave', () => { tip.hidden = true; }); btn.addEventListener('blur', () => { tip.hidden = true; });
+    bars.append(btn);
+  });
+  const total = list.reduce((sum, d) => sum + d.count, 0);
+  return h('div', { class: 'panel pad' }, h('h3', {}, t('ticketChart')), h('p', { class: 'trend' }, t('change30', { d: total, n: list.length })),
+    h('div', { class: 'chart' }, bars, tip, list.length ? h('div', { class: 'axis' }, h('span', {}, shortDate(list[0].date)), h('span', {}, shortDate(list[list.length - 1].date))) : null));
+}
+
+// ---- Bejelentés ----
+const SWATCHES = [['amber', '#f5b947'], ['violet', '#9d8cff'], ['green', '#52c98e'], ['red', '#f06a78'], ['blue', '#5865f2']];
+function announceView() {
+  const data = { channelId: '', title: '', text: '', pingRoleId: '', color: 'amber' };
+  const colorOf = () => SWATCHES.find(([id]) => id === data.color)[1];
+  const pv = preview({ ...data, color: colorOf() });
+  const refresh = () => pv.update({ ...data, color: colorOf() });
+  const textEl = h('textarea', { maxlength: 4000, style: 'min-height:140px', 'aria-label': t('annText'), placeholder: t('annText'), oninput: (e) => { data.text = e.target.value; refresh(); } });
+  const titleEl = h('input', { type: 'text', maxlength: 256, placeholder: t('annTitle'), 'aria-label': t('annTitle'), oninput: (e) => { data.title = e.target.value; refresh(); } });
+  const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': t('annColor') }, SWATCHES.map(([id, hex]) => {
+    const lab = h('label', { class: id === data.color ? 'on' : '', style: 'background:' + hex, title: id }, h('input', { type: 'radio', name: 'color', value: id, checked: id === data.color, 'aria-label': id, onchange: () => { data.color = id; swatches.querySelectorAll('label').forEach((l) => l.classList.toggle('on', l === lab)); refresh(); } }));
+    return lab;
+  }));
+  let armed = null;
+  const sendBtn = h('button', { class: 'btn', type: 'button', onclick: async () => {
+    if (!data.channelId || !data.text.trim()) { toast(t('annMissing'), true); return; }
+    if (!armed) { sendBtn.textContent = t('sendSure'); armed = setTimeout(() => { armed = null; sendBtn.textContent = t('annSend'); }, 3000); return; }
+    clearTimeout(armed); armed = null; sendBtn.textContent = t('annSend'); sendBtn.disabled = true;
+    try { await api('/api/announce', data); toast(t('annSent')); data.title = ''; data.text = ''; titleEl.value = ''; textEl.value = ''; refresh(); } catch (e) { toast(t('sendFail'), true); }
+    sendBtn.disabled = false;
+  } }, t('annSend'));
+  const lab = (text, el) => h('label', { style: 'display:block' }, h('span', { class: 'hint', style: 'display:block;margin:0 0 4px' }, text), el);
+  return h('div', {}, h('div', { class: 'note calm' }, richText(t('annIntro'))),
+    h('div', { class: 'item' },
+      h('div', { class: 'two' }, lab(t('annChannel'), channelSelect('text', '', (v) => { data.channelId = v; })), lab(t('schPing'), roleSelect('', (v) => { data.pingRoleId = v; refresh(); }))),
+      titleEl, textEl,
+      h('div', {}, h('span', { class: 'hint', style: 'display:block;margin:0 0 6px' }, t('annColor')), swatches),
+      pv.el,
+      h('div', { class: 'actions', style: 'margin:0' }, sendBtn)));
+}
+
+// ---- Tagkereső ----
+function membersView() {
+  const results = h('div', { class: 'people', 'aria-live': 'polite' });
+  const area = h('div');
+  let timer = null; let lastQuery = '';
+  const input = h('input', { type: 'text', placeholder: t('memSearch'), 'aria-label': t('memSearch'), autocomplete: 'off', oninput: (e) => {
+    clearTimeout(timer);
+    const q = e.target.value.trim();
+    timer = setTimeout(async () => {
+      lastQuery = q;
+      if (!q) { results.replaceChildren(); return; }
+      try {
+        const { list } = await api('/api/members?q=' + encodeURIComponent(q));
+        if (q !== lastQuery) return;
+        results.replaceChildren(...(list.length ? list.map((m) => h('button', { class: 'person', type: 'button', onclick: () => openMember(m.id) },
+          m.avatar ? h('img', { src: m.avatar, alt: '' }) : h('div', { class: 'pf' }), h('span', {}, m.name, h('small', {}, '@' + m.username))))
+          : [h('p', { class: 'hint' }, t('memNone'))]));
+      } catch (e) { results.replaceChildren(h('p', { class: 'hint' }, t('error'))); }
+    }, 350);
+  } });
+  const searchBox = h('div', {}, h('div', { class: 'note calm' }, t('memIntro')), input, results);
+  const openMember = async (id) => {
+    let m;
+    try { m = await api('/api/member?id=' + encodeURIComponent(id)); } catch (e) { toast(t('error'), true); return; }
+    const caseNames = T.caseNames[LANG];
+    const fact = (label, value) => h('div', {}, h('span', {}, label), value);
+    area.replaceChildren(h('div', {},
+      h('div', { class: 'actions', style: 'margin:0 0 12px' }, h('button', { class: 'btn ghost small', type: 'button', onclick: () => { area.replaceChildren(searchBox); input.focus(); } }, '← ' + t('memBack'))),
+      h('div', { class: 'panel pad' },
+        h('div', { class: 'profile' }, m.avatar ? h('img', { src: m.avatar, alt: '' }) : h('div', { class: 'pf' }),
+          h('div', {}, h('h3', {}, m.name), h('p', { class: 'dim' }, '@' + m.username),
+            h('div', { class: 'badges' }, m.bot ? h('span', { class: 'badge' }, 'BOT') : null, m.inServer ? null : h('span', { class: 'badge bad' }, t('notInServer')),
+              m.timeoutUntil ? h('span', { class: 'badge bad' }, t('timeout') + ': ' + duration(m.timeoutUntil - Date.now())) : null,
+              m.warnings ? h('span', { class: 'badge warn' }, '⚠️ ' + m.warnings) : null))),
+        h('div', { class: 'facts' },
+          fact(t('joined'), m.joinedAt ? t('ago', { t: duration(Date.now() - m.joinedAt) }) : '–'),
+          fact(t('account'), m.createdAt ? duration(Date.now() - m.createdAt) : '–'),
+          fact(t('invitedBy'), m.invitedBy || t('unknown')),
+          fact(t('invitedCount'), String(m.invited)),
+          fact(t('warnings'), String(m.warnings))),
+        h('h3', { style: 'margin-top:6px' }, t('roles')),
+        m.roles.length ? h('div', { class: 'chips', style: 'margin-top:8px' }, m.roles.map((r) => h('span', { class: 'chip', style: 'cursor:default' }, h('span', { class: 'dot', style: 'background:' + roleColor(r) }), r.name))) : h('p', { class: 'hint' }, t('noRoles')),
+        h('h3', { style: 'margin-top:16px' }, t('history2')),
+        m.cases.length ? h('ul', { class: 'list' }, m.cases.map((c) => h('li', {}, h('b', {}, '#' + c.id), (caseNames[c.type] || c.type) + (c.reason ? ': ' + c.reason : ''), h('span', { class: 'dim' }, duration(Date.now() - c.time)))))
+          : h('p', { class: 'hint' }, t('clean')))));
+    window.scrollTo(0, 0);
+  };
+  area.append(searchBox);
+  setTimeout(() => input.focus(), 50);
+  return area;
+}
+
+// ---- Biztonsági mentés ----
+function backupView() {
+  const file = h('input', { type: 'file', accept: 'application/json,.json', 'aria-label': t('restoreFile'), onchange: async (e) => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    let data;
+    try { data = JSON.parse(await f.text()); } catch (err) { toast(t('badFile'), true); return; }
+    try {
+      const r = await api('/api/restore', { data });
+      toast(t('restored', { s: r.settings, c: r.commands, m: r.schedules }));
+      setTimeout(() => location.reload(), 2500);
+    } catch (err) { toast(t('badFile'), true); }
+  } });
+  return h('div', {}, h('div', { class: 'note calm' }, t('backupIntro')),
+    h('div', { class: 'actions' }, h('a', { class: 'btn', href: '/api/backup', download: '' }, t('download')), h('span', { class: 'btn ghost file-btn' }, t('restoreFile'), file)),
+    h('div', { class: 'note', style: 'margin-top:18px' }, '📱 ' + t('install')));
 }
 
 // ---- Listaszerkesztők (parancsok, időzített üzenetek) ----
@@ -633,7 +846,10 @@ function views() {
     ...META.sections.map((sec) => ({ id: sec.id, group: 1, icon: sec.label[LANG].split(' ')[0], label: sec.label[LANG].split(' ').slice(1).join(' '), sub: (SECTION_SUB[sec.id] || ['', ''])[LANG], render: () => h('div', { class: 'panel' }, sec.fields.map(renderField)) })),
     { id: 'commands', group: 2, icon: '⌨️', label: t('commands'), sub: t('commandsSub'), render: commandsView },
     { id: 'schedules', group: 2, icon: '⏰', label: t('schedules'), sub: t('schedulesSub'), render: schedulesView },
+    { id: 'announce', group: 2, icon: '📣', label: t('announce'), sub: t('announceSub'), render: announceView },
+    { id: 'members', group: 2, icon: '👥', label: t('members2'), sub: t('membersSub'), render: membersView },
     { id: 'logs', group: 2, icon: '📜', label: t('logs'), sub: t('logsSub'), render: logsView },
+    { id: 'backup', group: 2, icon: '💾', label: t('backup'), sub: t('backupSub'), render: backupView },
   ];
 }
 
@@ -767,7 +983,7 @@ Promise.all([api('/api/meta'), api('/api/stats').catch(() => null)]).then(([meta
 
 function appPage() {
   return `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#151730"><title>Vezérlőpult</title>${FONTS}<style>${STYLE}</style></head><body><main><p class="dim">…</p></main><script>${SCRIPT}</script></body></html>`;
+<meta name="theme-color" content="#151730"><title>Vezérlőpult</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">${FONTS}<style>${STYLE}</style></head><body><main><p class="dim">…</p></main><script>${SCRIPT}</script></body></html>`;
 }
 
 module.exports = { loginPage, appPage };

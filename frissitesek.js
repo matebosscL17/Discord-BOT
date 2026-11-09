@@ -5,6 +5,27 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.14.0',
+    cim: 'Vezérlőpult: bejelentés, tagkereső, grafikonok',
+    privatValtozasok: [
+      '+ Bejelentés küldése a vezérlőpultról, színválasztással és Discord-szerű előnézettel',
+      '+ Tagkereső: név alapján megkeresi a tagot, és mutatja, mióta tag, ki hívta meg, milyen rangjai és figyelmeztetései vannak',
+      '+ Grafikonok: taglétszám az elmúlt 30 napban és új ticketek naponta (a bot naponta feljegyzi a taglétszámot)',
+      '+ Biztonsági mentés: a beállítások, parancsok és időzített üzenetek letölthetők és visszatölthetők',
+      '+ A vezérlőpult a telefon kezdőképernyőjére tehető, és alkalmazásként nyílik meg',
+    ],
+    en: {
+      cim: 'Dashboard: announcements, member lookup, charts',
+      privatValtozasok: [
+        '+ Send announcements from the dashboard, with a color choice and a Discord-style preview',
+        '+ Member lookup: find a member by name and see when they joined, who invited them, their roles and warnings',
+        '+ Charts: member count over the last 30 days and new tickets per day (the bot notes the member count daily)',
+        '+ Backup: settings, commands and scheduled messages can be downloaded and restored',
+        '+ The dashboard can be added to the phone home screen and opens like an app',
+      ],
+    },
+  },
+  {
     verzio: '2.13.0',
     cim: 'Megújult vezérlőpult',
     privatValtozasok: [
