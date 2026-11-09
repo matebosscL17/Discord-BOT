@@ -60,6 +60,19 @@ function dueItems(list, now, state) {
   });
 }
 
+// Egy üzenet kiküldése (az időzítő és a vezérlőpult „Küldés most” gombja is ezt használja).
+async function sendItem(client, item) {
+  const channel = await client.channels.fetch(item.channelId).catch(() => null);
+  if (!channel || channel.guildId !== config.guildId) throw new Error('channel');
+  const embed = new EmbedBuilder().setColor(settings.color).setDescription(item.text);
+  if (item.title) embed.setTitle(item.title);
+  await channel.send({
+    content: item.pingRoleId ? `<@&${item.pingRoleId}>` : undefined,
+    embeds: [embed],
+    allowedMentions: { roles: item.pingRoleId ? [item.pingRoleId] : [] },
+  });
+}
+
 async function check(client) {
   const list = load();
   if (!list.length) return;
@@ -69,15 +82,7 @@ async function check(client) {
   for (const item of due) {
     state[item.id] = now.date; // előbb jelöli, hogy hiba esetén se küldje kétszer
     writeJson(STATE_FILE, state);
-    const channel = await client.channels.fetch(item.channelId).catch(() => null);
-    if (!channel || channel.guildId !== config.guildId) continue;
-    const embed = new EmbedBuilder().setColor(settings.color).setDescription(item.text);
-    if (item.title) embed.setTitle(item.title);
-    await channel.send({
-      content: item.pingRoleId ? `<@&${item.pingRoleId}>` : undefined,
-      embeds: [embed],
-      allowedMentions: { roles: item.pingRoleId ? [item.pingRoleId] : [] },
-    }).catch((error) => console.error('Időzített üzenet hiba:', error.message));
+    await sendItem(client, item).catch((error) => console.error('Időzített üzenet hiba:', error.message));
   }
 }
 
@@ -92,5 +97,6 @@ module.exports = {
   load,
   save,
   validateList,
+  sendItem,
   _internal: { localNow, dueItems, check },
 };

@@ -5,6 +5,31 @@
 // Az "en" rész nem kötelező: ha a settings.js-ben language: 'en', ezt használja helyette.
 module.exports = [
   {
+    verzio: '2.13.0',
+    cim: 'Megújult vezérlőpult',
+    privatValtozasok: [
+      '+ Új kinézet: oldalsó menü, telefonon lenyíló, gépen mindig látszik',
+      '+ Áttekintő kezdőlap: élő látkép arról, ki mivel játszik, taglétszám, ticketek, moderáció, bump és meghívások',
+      '+ Keresés a beállítások között, a találatra kattintva oda ugrik',
+      '+ Discord-szerű előnézet az üdvözlő szöveghez, az egyedi parancsokhoz és az időzített üzenetekhez',
+      '+ „Küldés most” gomb az időzített üzenetekhez, kipróbáláshoz',
+      '+ Napló oldal: a bot üzenetei és hibái a Termux nélkül is láthatók',
+      '+ A módosított mezők megjelölve, egy kattintással visszaállíthatók',
+    ],
+    en: {
+      cim: 'Redesigned dashboard',
+      privatValtozasok: [
+        '+ New look: side menu, slides in on phones, always visible on computers',
+        '+ Overview home page: a live skyline of who is playing what, members, tickets, moderation, bump and invites',
+        '+ Search settings, tap a result to jump to it',
+        '+ Discord-style preview for the welcome text, custom commands and scheduled messages',
+        '+ "Send now" button for scheduled messages, to try them out',
+        '+ Log page: the bot messages and errors are visible without Termux',
+        '+ Changed fields are marked and can be undone with one tap',
+      ],
+    },
+  },
+  {
     verzio: '2.12.1',
     cim: 'Tisztább napló',
     privatValtozasok: [

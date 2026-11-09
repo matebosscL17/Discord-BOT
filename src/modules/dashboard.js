@@ -1,6 +1,6 @@
 const http = require('node:http');
 const crypto = require('node:crypto');
-const { ChannelType, Events } = require('discord.js');
+const { ChannelType, Events, GatewayIntentBits } = require('discord.js');
 const config = require('../config');
 const settings = require('../../settings');
 const overrides = require('../overrides');
@@ -8,6 +8,10 @@ const schema = require('../dashboard/schema');
 const { loginPage, appPage } = require('../dashboard/page');
 const customCommands = require('./customcommands');
 const schedules = require('./schedules');
+const nowPlaying = require('./nowplaying');
+const ticketStats = require('../ticketStats');
+const { readJson } = require('../store');
+const { version } = require('../../package.json');
 
 // Webes vezérlőpult. Bekapcsolás: a .env fájlba (vagy a hosting panelre) írd be a DASHBOARD_PASSWORD sort.
 // Telefonon a böngészőben: http://localhost:3000  (a port a DASHBOARD_PORT-tal állítható)
@@ -19,6 +23,21 @@ const SESSION_MS = 7 * 24 * 3600000;
 const MAX_BODY = 200 * 1024;
 const MAX_ATTEMPTS = 5;
 const ATTEMPT_WINDOW_MS = 5 * 60000;
+
+const LOG_LINES = 300;
+const DAY_MS = 24 * 3600000;
+
+// A bot naplójának utolsó sorai, hogy a vezérlőpulton is látszódjanak (ne kelljen a Termuxban keresgélni).
+const logs = [];
+for (const level of PASSWORD ? ['log', 'warn', 'error'] : []) {
+  const original = console[level].bind(console);
+  console[level] = (...args) => {
+    original(...args);
+    const text = args.map((arg) => (arg instanceof Error ? arg.stack ?? arg.message : typeof arg === 'string' ? arg : JSON.stringify(arg) ?? String(arg))).join(' ');
+    logs.push({ time: Date.now(), level, text: text.slice(0, 2000) });
+    if (logs.length > LOG_LINES) logs.shift();
+  };
+}
 
 const sessions = new Map(); // token -> lejárat
 const attempts = new Map(); // ip -> időbélyegek
@@ -55,7 +74,7 @@ function send(res, status, body, type = 'text/html; charset=utf-8', headers = {}
     'X-Frame-Options': 'DENY',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer',
-    'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://cdn.discordapp.com",
+    'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://cdn.discordapp.com",
     ...headers,
   });
   res.end(body);
@@ -113,6 +132,56 @@ async function guildData(client) {
   };
 }
 
+// Élő adatok az áttekintő oldalhoz. Minden rész külön hibatűrő: ha valami hiányzik, az helyen üres marad.
+async function liveStats(client) {
+  const guild = await client.guilds.fetch(config.guildId).catch(() => null);
+  const nameOf = (id) => guild?.members?.cache?.get(id)?.displayName ?? client.users?.cache?.get(id)?.username ?? null;
+  const presenceOn = Boolean(client.options?.intents?.has?.(GatewayIntentBits.GuildPresences));
+  const presences = presenceOn ? [...(guild?.presences?.cache?.values?.() ?? [])] : [];
+  const players = presenceOn && guild ? nowPlaying._internal.playersByGame(guild) : {};
+  const since = Date.now() - 7 * DAY_MS;
+
+  const cases = readJson('mod-cases', { cases: [] }).cases;
+  const bump = readJson('bump', { nextAt: 0, total: 0, lastUserId: null });
+  const invites = readJson('invites', { inviters: {} });
+  const security = readJson('security', { lockdown: null });
+
+  return {
+    version,
+    bot: {
+      tag: client.user?.tag ?? null,
+      avatar: client.user?.displayAvatarURL?.({ size: 64 }) ?? null,
+      online: Boolean(client.isReady?.()),
+      ping: Math.max(0, Math.round(client.ws?.ping ?? 0)),
+      uptime: client.uptime ?? 0,
+      memoryMb: Math.round(process.memoryUsage().rss / 1048576),
+    },
+    guild: guild ? {
+      name: guild.name,
+      icon: guild.iconURL?.({ size: 128 }) ?? null,
+      members: guild.memberCount ?? 0,
+      boosts: guild.premiumSubscriptionCount ?? 0,
+      online: presenceOn ? presences.filter((p) => !p.user?.bot && p.status && p.status !== 'offline').length : null,
+    } : null,
+    presenceOn,
+    games: (settings.nowPlaying?.games ?? []).map((game) => ({
+      id: game.id, label: game.label, emoji: game.emoji, players: (players[game.id] ?? []).length,
+    })),
+    tickets: ticketStats.summarize(since),
+    cases: {
+      week: cases.filter((item) => item.time >= since).length,
+      recent: cases.slice(-5).reverse().map((item) => ({
+        id: item.id, type: item.type, time: item.time, reason: item.reason ?? '', user: nameOf(item.userId) ?? item.userId, mod: nameOf(item.modId),
+      })),
+    },
+    bump: { nextAt: bump.nextAt ?? 0, total: bump.total ?? 0, last: bump.lastUserId ? nameOf(bump.lastUserId) : null },
+    invites: Object.entries(invites.inviters ?? {})
+      .map(([id, item]) => ({ name: nameOf(id) ?? id, count: Math.max(0, (item.regular ?? 0) - (item.left ?? 0) - (item.fake ?? 0)) }))
+      .filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3),
+    lockdown: Boolean(security.lockdown),
+  };
+}
+
 // A rangokat a settings.js-ben névvel is meg lehet adni (pl. 'Founder'): a vezérlőpult ezeket azonosítóra váltja.
 function resolveRoleNames(values, roles) {
   for (const field of schema.fields.filter((item) => item.type === 'roles')) {
@@ -140,6 +209,8 @@ async function handleApi(req, res, client, path) {
       bot: { tag: client.user?.tag, ping: Math.round(client.ws?.ping ?? 0), uptime: client.uptime ?? 0 },
     });
   }
+  if (req.method === 'GET' && path === '/api/stats') return json(res, 200, await liveStats(client));
+  if (req.method === 'GET' && path === '/api/logs') return json(res, 200, { lines: logs });
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
   // Egyszerű védelem a más oldalakról érkező kérések ellen.
   if (req.headers['x-dashboard'] !== '1') return json(res, 403, { error: 'forbidden' });
@@ -181,6 +252,16 @@ async function handleApi(req, res, client, path) {
     if (!list) return json(res, 400, { error: 'invalid' });
     schedules.save(list);
     return json(res, 200, { ok: true, list });
+  }
+  if (path === '/api/schedules/send') {
+    const [item] = schedules.validateList([body.item]) ?? [];
+    if (!item) return json(res, 400, { error: 'invalid' });
+    try {
+      await schedules.sendItem(client, item);
+    } catch {
+      return json(res, 400, { error: 'send' });
+    }
+    return json(res, 200, { ok: true });
   }
   if (path === '/api/restart') {
     json(res, 200, { ok: true });

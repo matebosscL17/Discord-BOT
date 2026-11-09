@@ -256,6 +256,12 @@ A módosítások a `data/settings-override.json` fájlba kerülnek, és felülí
 
 Az egyedi parancsok és az időzített üzenetek mentés után azonnal élnek, újraindítás nélkül.
 
+Mit találsz rajta:
+- **Áttekintés**: a játékok tornyaiban annyi ablak világít, ahányan éppen játszanak. Alatta a taglétszám, a ticketek, a moderáció, a bump és a meghívások.
+- **Beállítások**: a menüben kereshetsz is, például „raid” vagy „csatorna”. A módosított mezők mellett sárga csík jelzi a változást, a **Visszaállítás** visszaadja a régi értéket.
+- **Egyedi parancsok** és **Időzített üzenetek**: Discord-szerű előnézettel. Az időzített üzenetet a **Küldés most** gombbal ki is próbálhatod.
+- **Napló**: a bot utolsó 300 üzenete és hibája, nem kell hozzá a Termux.
+
 Alapból csak a telefonról érhető el. Ha a gépedről is el akarod érni ugyanazon a wifin, írd be: `DASHBOARD_HOST=0.0.0.0`, és a címben a telefon IP-címét használd. Ilyenkor válassz erős jelszót, és ne nyisd meg a portot az internet felé.
 
 ## Most játszik panel
